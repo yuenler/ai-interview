@@ -7,7 +7,7 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState('login');
+  const [currentPage, setCurrentPage] = useState('interview');
 
   const navigateTo = (page: string) => {
     setCurrentPage(page);

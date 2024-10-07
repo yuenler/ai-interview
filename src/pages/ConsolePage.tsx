@@ -140,12 +140,22 @@ export function ConsolePage() {
 
     // Connect to realtime API
     await client.connect();
-    client.sendUserMessageContent([
-      {
-        type: `input_text`,
-        text: `Hello! I am now working on the ${questionType}.`,
-      },
-    ]);
+
+    if (questionType === 'lboQuestion') {
+      client.sendUserMessageContent([
+        {
+          type: `input_text`,
+          text: `Hello! I am now working on the LBO modeling question.`,
+        },
+      ]);
+    } else if (questionType === 'codingQuestion') {
+      client.sendUserMessageContent([
+        {
+          type: `input_text`,
+          text: `Hello! I am now working on the coding question. The question is as follows: ${codingQuestion}`,
+        },
+      ]);
+    }
 
     if (client.getTurnDetectionType() === 'server_vad') {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
