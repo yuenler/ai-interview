@@ -5,12 +5,8 @@ import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
-import debounce from 'lodash.debounce';
-
 import './ConsolePage.scss';
 import CodingQuestionPage from './CodingQuestionPage';
-import { set } from 'lodash';
-import { time } from 'console';
 
 /**
  * Running a local relay server will allow you to hide your API key
