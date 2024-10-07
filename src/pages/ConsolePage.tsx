@@ -1,3 +1,14 @@
+import { useEffect, useRef, useCallback, useState } from 'react';
+
+import { RealtimeClient } from '@openai/realtime-api-beta';
+import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
+import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
+import { instructions } from '../utils/conversation_config.js';
+import { WavRenderer } from '../utils/wav_renderer';
+
+import './ConsolePage.scss';
+import CodingQuestionPage from './CodingQuestionPage';
+
 /**
  * Running a local relay server will allow you to hide your API key
  * and run custom logic on the server
@@ -8,22 +19,8 @@
  * This will also require you to set OPENAI_API_KEY= in a `.env` file
  * You can run it with `npm run relay`, in parallel with `npm start`
  */
-const LOCAL_RELAY_SERVER_URL= process.env.REACT_APP_LOCAL_RELAY_SERVER_URL || 'http://localhost:8081';
-
-
-import { useEffect, useRef, useCallback, useState } from 'react';
-
-import { RealtimeClient } from '@openai/realtime-api-beta';
-import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
-import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
-import { instructions } from '../utils/conversation_config.js';
-import { WavRenderer } from '../utils/wav_renderer';
-
-import { X, Zap, } from 'react-feather';
-import { Button } from '../components/button/Button';
-
-import './ConsolePage.scss';
-
+const LOCAL_RELAY_SERVER_URL =
+  process.env.REACT_APP_LOCAL_RELAY_SERVER_URL || 'http://localhost:8081';
 
 /**
  * Type for all event logs
@@ -50,7 +47,7 @@ export function ConsolePage() {
   );
   const clientRef = useRef<RealtimeClient>(
     new RealtimeClient({
-        url: LOCAL_RELAY_SERVER_URL
+      url: LOCAL_RELAY_SERVER_URL,
     })
   );
 
@@ -77,12 +74,43 @@ export function ConsolePage() {
   const [realtimeEvents, setRealtimeEvents] = useState<RealtimeEvent[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
+  const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion'>('questionList');
+  const [timeLeft, setTimeLeft] = useState(3600); // 1 hour timer in seconds
 
+  /**
+   * Questions assigned to the user
+   */
+  const lboQuestion = 'Fill in the missing values in this spreadsheet to complete the LBO model.';
+  const codingQuestion = 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.';
 
+  /**
+   * Timer countdown effect
+   */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prevTime) => prevTime - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  /**
+   * Format time as hh:mm:ss
+   */
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600)
+      .toString()
+      .padStart(2, '0');
+    const m = Math.floor((seconds % 3600) / 60)
+      .toString()
+      .padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  };
 
   /**
    * Connect to conversation:
-   * WavRecorder taks speech input, WavStreamPlayer output, client is API client
+   * WavRecorder takes speech input, WavStreamPlayer output, client is API client
    */
   const connectConversation = useCallback(async () => {
     const client = clientRef.current;
@@ -110,7 +138,6 @@ export function ConsolePage() {
       {
         type: `input_text`,
         text: `Hello!`,
-        // text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
       },
     ]);
 
@@ -138,6 +165,19 @@ export function ConsolePage() {
     await wavStreamPlayer.interrupt();
   }, []);
 
+  /**
+   * Handle code changes from the coding question page
+   */
+  const handleCodeChange = (code: string) => {
+    // Send the code text to the client
+    const client = clientRef.current;
+    client.sendUserMessageContent([
+      {
+        type: `input_text`,
+        text: code,
+      },
+    ]);
+  };
 
   /**
    * Auto-scroll the event logs
@@ -281,7 +321,6 @@ export function ConsolePage() {
         return { ok: true };
       }
     );
-   
 
     // handle realtime events from client + server for event logging
     client.on('realtime.event', (realtimeEvent: RealtimeEvent) => {
@@ -333,35 +372,99 @@ export function ConsolePage() {
    */
   return (
     <div data-component="ConsolePage">
-      <div className="content-main">
-        <div className="content-logs">
-          <div className="content-block events">
-          <div className="flex flex-col items-center h-screen bg-gray-200">
-      <h2 className="text-2xl font-bold mt-8">LBO Modeling Question</h2>
-      <div className="w-full h-full mt-4">
-        <iframe
-          src="https://docs.google.com/spreadsheets/d/1jfRiOJ7_YaWZqvFpIFzb3H4oy_qPpnUbYB8dVtprxsk/edit?usp=sharing"
-          title="LBO Sheet"
-          className="w-full h-full"
-        ></iframe>
+      {/* Timer displayed at the top right */}
+      <div className="fixed top-0 right-0 m-2 py-1 px-4 bg-gray-800 text-white text-lg font-semibold rounded-lg shadow-md">
+        Time Left: {formatTime(timeLeft)}
+      </div>
+
+      {currentPage === 'questionList' && (
+        <QuestionListPage
+          onSelectQuestion={(questionType) => {
+            setCurrentPage(questionType);
+            connectConversation();
+          }}
+        />
+      )}
+
+      {currentPage === 'lboQuestion' && (
+        <LBOQuestionPage
+          question={lboQuestion}
+          onBack={() => setCurrentPage('questionList')}
+        />
+      )}
+
+      {currentPage === 'codingQuestion' && (
+        <CodingQuestionPage
+          question={codingQuestion}
+          onBack={() => {
+            setCurrentPage('questionList');
+            disconnectConversation();
+          }}
+          onCodeChange={handleCodeChange}
+        />
+      )}
+    </div>
+  );
+}
+/**
+ * Question List Page Component
+ */
+function QuestionListPage({
+  onSelectQuestion,
+}: {
+  onSelectQuestion: (questionType: 'lboQuestion' | 'codingQuestion') => void;
+}) {
+  return (
+    <div className="question-list-page flex items-center justify-center h-screen bg-gray-100">
+      <div className="text-center">
+        <h2 className="text-4xl font-bold mb-8">Assigned Questions</h2>
+        <div className="space-y-4">
+          <button
+            onClick={() => onSelectQuestion('lboQuestion')}
+            className="w-full max-w-md py-4 px-8 bg-blue-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
+          >
+            LBO Modeling Question
+          </button>
+          <button
+            onClick={() => onSelectQuestion('codingQuestion')}
+            className="w-full max-w-md py-4 px-8 bg-green-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300"
+          >
+            Coding Question
+          </button>
+        </div>
       </div>
     </div>
-          </div>
-          
-          <div className="content-actions">
-            <div className="spacer" />
-            
-            <div className="spacer" />
-            <Button
-              label={isConnected ? 'end' : 'start'}
-              iconPosition={isConnected ? 'end' : 'start'}
-              icon={isConnected ? X : Zap}
-              buttonStyle={isConnected ? 'regular' : 'action'}
-              onClick={
-                isConnected ? disconnectConversation : connectConversation
-              }
-            />
-          </div>
+  );
+}
+
+
+/**
+ * LBO Question Page Component
+ */
+function LBOQuestionPage({
+  question,
+  onBack,
+}: {
+  question: string;
+  onBack: () => void;
+}) {
+  return (
+    <div>
+      <button
+        type="button"
+        className="py-1 m-2 px-4 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
+        onClick={onBack}
+      >
+        Back to Questions
+      </button>
+      <div className="flex flex-col items-center h-screen bg-gray-200">
+        <h2 className="text-2xl font-bold mt-8">LBO Modeling Question</h2>
+        <div className="w-full h-full mt-4">
+          <iframe
+            src="https://docs.google.com/spreadsheets/d/1S_1616WaRrMdYRQ5DM5_JZri3ycU8NtM4BK0SmpfH50/edit?usp=sharing"
+            title="LBO Sheet"
+            className="w-full h-full"
+          ></iframe>
         </div>
       </div>
     </div>

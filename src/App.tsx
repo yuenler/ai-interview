@@ -1,9 +1,9 @@
 import { ConsolePage } from './pages/ConsolePage';
 // import './App.scss';
 import React, { useState } from 'react';
-import Login from './components/Login';
 import Permissions from './components/Permissions';
 import Instructions from './components/Instructions';
+import LoginSignupPage from './components/LoginSignupPage';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState('interview');
@@ -15,7 +15,7 @@ const App: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case 'login':
-        return <Login navigateTo={navigateTo} />;
+        return <LoginSignupPage navigateTo={navigateTo} />;
       case 'permissions':
         return <Permissions navigateTo={navigateTo} />;
       case 'instructions':
@@ -23,7 +23,7 @@ const App: React.FC = () => {
       case 'interview':
         return <ConsolePage />;
       default:
-        return <Login navigateTo={navigateTo} />;
+        return <LoginSignupPage navigateTo={navigateTo} />;
     }
   };
 

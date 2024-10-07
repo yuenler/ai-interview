@@ -4,13 +4,13 @@ interface Props {
   navigateTo: (page: string) => void;
 }
 
-const Login: React.FC<Props> = ({ navigateTo }) => {
+const Signup: React.FC<Props> = ({ navigateTo }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Perform login logic here
+    // Perform signup logic here
     navigateTo('permissions');
   };
 
@@ -20,7 +20,7 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
         className="bg-white p-10 rounded-md shadow-lg max-w-sm w-full border border-gray-200"
         onSubmit={handleSubmit}
       >
-        <h2 className="text-2xl font-semibold mb-6 text-center text-gray-800">Login</h2>
+        <h2 className="text-2xl font-semibold mb-6 text-center text-gray-800">Sign Up</h2>
         <div className="mb-4">
           <label className="block text-gray-700 font-medium">Email:</label>
           <input
@@ -45,11 +45,11 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
           type="submit"
           className="w-full bg-gray-800 text-white py-3 rounded-md hover:bg-gray-700 transition duration-300"
         >
-          Login
+          Sign Up
         </button>
       </form>
     </div>
   );
 };
 
-export default Login;
+export default Signup;
