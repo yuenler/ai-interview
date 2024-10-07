@@ -75,7 +75,7 @@ export function ConsolePage() {
   const [isConnected, setIsConnected] = useState(false);
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
   const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion'>('questionList');
-  const [timeLeft, setTimeLeft] = useState(3600); // 1 hour timer in seconds
+  const [timeLeft, setTimeLeft] = useState(60); // 1 minute
 
   /**
    * Questions assigned to the user
@@ -90,6 +90,12 @@ export function ConsolePage() {
     const timer = setInterval(() => {
       setTimeLeft((prevTime) => prevTime - 1);
     }, 1000);
+
+    // when timeLeft is 0, disconnect the conversation and go back to question list
+    if (timeLeft <= 0) {
+      disconnectConversation();
+      setCurrentPage('questionList');
+    }
 
     return () => clearInterval(timer);
   }, []);
@@ -112,7 +118,7 @@ export function ConsolePage() {
    * Connect to conversation:
    * WavRecorder takes speech input, WavStreamPlayer output, client is API client
    */
-  const connectConversation = useCallback(async () => {
+  const connectConversation = useCallback(async (questionType: string) => {
     const client = clientRef.current;
     const wavRecorder = wavRecorderRef.current;
     const wavStreamPlayer = wavStreamPlayerRef.current;
@@ -137,7 +143,7 @@ export function ConsolePage() {
     client.sendUserMessageContent([
       {
         type: `input_text`,
-        text: `Hello!`,
+        text: `Hello! I am now working on the ${questionType}.`,
       },
     ]);
 
@@ -381,7 +387,7 @@ export function ConsolePage() {
         <QuestionListPage
           onSelectQuestion={(questionType) => {
             setCurrentPage(questionType);
-            connectConversation();
+            connectConversation(questionType);
           }}
         />
       )}
