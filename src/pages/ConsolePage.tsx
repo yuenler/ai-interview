@@ -95,6 +95,7 @@ export function ConsolePage() {
     if (timeLeft <= 0) {
       disconnectConversation();
       setCurrentPage('questionList');
+      return () => clearInterval(timer);
     }
 
     return () => clearInterval(timer);
