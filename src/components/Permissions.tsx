@@ -40,6 +40,7 @@ const Permissions: React.FC<Props> = ({ navigateTo }) => {
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
       } else if (permissions[step] === 'Screen Sharing') {
         stream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true });
+        setStatusMessage('This is just to check that you are able to screen share. You will be asked to share your screen again later.');
       }
 
       if (stream) {
@@ -81,17 +82,19 @@ const Permissions: React.FC<Props> = ({ navigateTo }) => {
         <h2 className="text-3xl font-bold mb-6">
           Enable {permissions[step]} Access
         </h2>
-        <button
-          onClick={requestPermission}
-          className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 mb-4"
-        >
-          Enable
-        </button>
+        {!mediaStream && (
+          <button
+            onClick={requestPermission}
+            className="border-2 border-green-500 text-green-500 py-2 px-4 rounded hover:bg-green-100 mb-4"
+          >
+            Enable
+          </button>
+        )}
         {statusMessage && (
-          <p className="text-green-700 bg-green-200 py-2 px-4 rounded mt-4">{statusMessage}</p>
+          <p className="text-green-700 bg-green-100 py-2 px-4 rounded mt-4">{statusMessage}</p>
         )}
         {errorMessage && (
-          <p className="text-red-700 bg-red-200 py-2 px-4 rounded mt-4">{errorMessage}</p>
+          <p className="text-red-700 bg-red-100 py-2 px-4 rounded mt-4">{errorMessage}</p>
         )}
         {mediaStream && permissions[step] === 'Webcam' && (
           <video
@@ -134,7 +137,7 @@ const Permissions: React.FC<Props> = ({ navigateTo }) => {
         {mediaStream && (
           <button
             onClick={handleContinue}
-            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 mt-4"
+            className="border-2 border-blue-500 text-blue-500 py-2 px-4 rounded hover:bg-blue-100 mt-4"
           >
             Continue
           </button>

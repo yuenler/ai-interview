@@ -15,7 +15,7 @@ const Instructions: React.FC<Props> = ({navigateTo}) => {
       <div className="bg-white p-8 rounded shadow-md w-2/3">
         <h2 className="text-2xl font-bold mb-4">Instructions</h2>
         <p className="mb-6">
-          You will be presented with an LBO question. Please fill in the required fields in the embedded Google Sheet. Not all information is provided upfront—you'll need to ask questions verbally to the AI interviewer to gather all necessary information.
+          You will be presented with questions. You have 1 hour to solve the questions. Good luck!
         </p>
         <button
           onClick={handleStart}

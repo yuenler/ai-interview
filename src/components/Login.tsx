@@ -47,6 +47,12 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
         >
           Login
         </button>
+        <p
+          className="text-sm text-gray-600 mt-4 cursor-pointer text-center"
+          onClick={() => navigateTo('signup')}
+        >
+          Don't have an account? Sign up instead.
+        </p>
       </form>
     </div>
   );
