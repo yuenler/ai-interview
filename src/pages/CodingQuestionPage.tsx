@@ -9,24 +9,15 @@ import 'highlight.js/styles/default.css'; // Optional: You can choose another th
 import 'highlight.js/lib/languages/javascript'; // Replace with your desired language
 
 function CodingQuestionPage({
-  question,
   onBack,
   onCodeChange,
+  code,
 }: {
-  question: string;
+  code: string;
   onBack: () => void;
   onCodeChange: (code: string) => void;
 }) {
-  const [code, setCode] = useState(`# ${question}\n\n# Write your code here`);
 
-  // Debounce code changes to send significant changes to the client
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      onCodeChange(code);
-    }, 5000); // Adjust the debounce timing as needed
-
-    return () => clearTimeout(timeoutId);
-  }, [code]);
 
   return (
     <div>
@@ -39,7 +30,7 @@ function CodingQuestionPage({
       </button>
       <Editor
       value={code}
-      onValueChange={(newCode) => setCode(newCode)}
+      onValueChange={(newCode) => onCodeChange(newCode)}
       highlight={(code) => hljs.highlight(code, { language: 'python' }).value} // Use Python for highlighting
       padding={10}
       style={{

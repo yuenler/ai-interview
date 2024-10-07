@@ -76,12 +76,15 @@ export function ConsolePage() {
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
   const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion'>('questionList');
   const [timeLeft, setTimeLeft] = useState(60); // 1 minute
+  const [timeOfLastCodeSend, setTimeOfLastCodeSend] = useState(Date.now());
 
   /**
    * Questions assigned to the user
    */
   const lboQuestion = 'Fill in the missing values in this spreadsheet to complete the LBO model.';
   const codingQuestion = 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.';
+  
+  const [code, setCode] = useState(`# ${codingQuestion}\n\n# Write your code here`);
 
   /**
    * Timer countdown effect
@@ -185,15 +188,19 @@ export function ConsolePage() {
   /**
    * Handle code changes from the coding question page
    */
-  const handleCodeChange = (code: string) => {
-    // Send the code text to the client
-    const client = clientRef.current;
-    client.sendUserMessageContent([
-      {
-        type: `input_text`,
-        text: code,
-      },
-    ]);
+  const handleCodeChange = () => {
+
+    if (Date.now() - timeOfLastCodeSend < 5000) {
+      // Send the code text to the client
+      const client = clientRef.current;
+      client.sendUserMessageContent([
+        {
+          type: `input_text`,
+          text: code,
+        },
+      ]);
+      setTimeOfLastCodeSend(Date.now());
+      }
   };
 
   /**
@@ -376,6 +383,11 @@ export function ConsolePage() {
       setItems(items);
     });
 
+    // send the code when the speech stops
+    client.on('input_audio_buffer.append', async () => {
+      handleCodeChange();
+    });
+
     setItems(client.conversation.getItems());
 
     return () => {
@@ -412,12 +424,12 @@ export function ConsolePage() {
 
       {currentPage === 'codingQuestion' && (
         <CodingQuestionPage
-          question={codingQuestion}
           onBack={() => {
             setCurrentPage('questionList');
             disconnectConversation();
           }}
-          onCodeChange={handleCodeChange}
+          onCodeChange={(code) => setCode(code)}
+          code={code}
         />
       )}
     </div>
