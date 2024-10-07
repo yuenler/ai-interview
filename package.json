@@ -18,6 +18,8 @@
     "dotenv": "^16.4.5",
     "highlight.js": "^11.10.0",
     "leaflet": "^1.9.4",
+    "lodash": "^4.17.21",
+    "lodash.debounce": "^4.0.8",
     "postcss": "^8.4.47",
     "prismjs": "^1.29.0",
     "react": "^18.3.1",
@@ -63,6 +65,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@types/lodash.debounce": "^4.0.9",
     "nodemon": "^3.1.7"
   }
 }

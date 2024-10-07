@@ -5,9 +5,12 @@ import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
+import debounce from 'lodash.debounce';
 
 import './ConsolePage.scss';
 import CodingQuestionPage from './CodingQuestionPage';
+import { set } from 'lodash';
+import { time } from 'console';
 
 /**
  * Running a local relay server will allow you to hide your API key
@@ -76,7 +79,11 @@ export function ConsolePage() {
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
   const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion'>('questionList');
   const [timeLeft, setTimeLeft] = useState(60); // 1 minute
-  const [timeOfLastCodeSend, setTimeOfLastCodeSend] = useState(Date.now());
+  const prevCodeRef = useRef('');
+  const timeOfLastCodeSendRef = useRef(Date.now());
+
+  const codeRef = useRef('');
+
 
   /**
    * Questions assigned to the user
@@ -91,18 +98,25 @@ export function ConsolePage() {
    */
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prevTime) => prevTime - 1);
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+          disconnectConversation();
+          setCurrentPage('questionList');
+          clearInterval(timer);
+          return 0;
+        }
+        return prevTime - 1;
+      });
     }, 1000);
-
-    // when timeLeft is 0, disconnect the conversation and go back to question list
-    if (timeLeft <= 0) {
-      disconnectConversation();
-      setCurrentPage('questionList');
-      return () => clearInterval(timer);
-    }
-
+  
     return () => clearInterval(timer);
-  }, []);
+  }, [timeLeft]);
+
+  // whenever code changes, update the ref
+  useEffect(() => {
+    codeRef.current = code;
+  }, [code]);
+  
 
   /**
    * Format time as hh:mm:ss
@@ -188,20 +202,21 @@ export function ConsolePage() {
   /**
    * Handle code changes from the coding question page
    */
-  const handleCodeChange = () => {
-
-    if (Date.now() - timeOfLastCodeSend < 5000) {
+  const handleCodeChange = (text: string) => {
+    if (Date.now() - timeOfLastCodeSendRef.current > 5000 && text !== prevCodeRef.current) {
+      prevCodeRef.current = text;
+      timeOfLastCodeSendRef.current = Date.now();
+      console.log('Sending code to server');
       // Send the code text to the client
       const client = clientRef.current;
       client.sendUserMessageContent([
         {
           type: `input_text`,
-          text: code,
+          text: text,
         },
       ]);
-      setTimeOfLastCodeSend(Date.now());
-      }
-  };
+    }
+  }
 
   /**
    * Auto-scroll the event logs
@@ -368,6 +383,10 @@ export function ConsolePage() {
       }
     });
     client.on('conversation.updated', async ({ item, delta }: any) => {
+      if (item.role === "user"){
+        handleCodeChange(codeRef.current);
+      }
+
       const items = client.conversation.getItems();
       if (delta?.audio) {
         wavStreamPlayer.add16BitPCM(delta.audio, item.id);
@@ -381,11 +400,6 @@ export function ConsolePage() {
         item.formatted.file = wavFile;
       }
       setItems(items);
-    });
-
-    // send the code when the speech stops
-    client.on('input_audio_buffer.append', async () => {
-      handleCodeChange();
     });
 
     setItems(client.conversation.getItems());
@@ -428,7 +442,8 @@ export function ConsolePage() {
             setCurrentPage('questionList');
             disconnectConversation();
           }}
-          onCodeChange={(code) => setCode(code)}
+          onCodeChange={(code) => {
+            setCode(code)}}
           code={code}
         />
       )}
