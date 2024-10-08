@@ -20,8 +20,7 @@ function LBOQuestion({
         Back to Questions
       </button>
       <div className="flex flex-col items-center h-screen bg-gray-200">
-        <h2 className="text-2xl font-bold mt-8">Fill in the values in the spreadsheet.</h2>
-        <div className="w-full h-full mt-4">
+        <div className="w-full h-full">
           <iframe
             src="https://docs.google.com/spreadsheets/d/1S_1616WaRrMdYRQ5DM5_JZri3ycU8NtM4BK0SmpfH50/edit?usp=sharing"
             title="LBO Sheet"

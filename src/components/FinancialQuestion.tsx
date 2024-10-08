@@ -76,8 +76,7 @@ const FinancialQuestion: React.FC<FinancialQuestionPageProps> = ({ question, onB
         Back to Questions
       </button>
       <div className="flex flex-col items-center h-screen bg-gray-200">
-        <h2 className="text-2xl font-bold mt-8">Financial Analysis Question</h2>
-        <div className="w-full h-full mt-4">
+        <div className="w-full h-full">
           <iframe
             src="https://docs.google.com/spreadsheets/d/1yDnEAod0OEngvA87obxYhg0cqaJCDY_QxnxAUQAxXO8/edit?usp=sharing"
             title="Financial Analysis Sheet"
