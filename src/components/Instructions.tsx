@@ -4,25 +4,37 @@ interface Props {
   navigateTo: (page: string) => void;
 }
 
-const Instructions: React.FC<Props> = ({navigateTo}) => {
+const Instructions: React.FC<Props> = ({ navigateTo }) => {
 
   const handleStart = () => {
     navigateTo('interview');
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-200">
-      <div className="bg-white p-8 rounded shadow-md w-2/3">
-        <h2 className="text-2xl font-bold mb-4">Instructions</h2>
-        <p className="mb-6">
-          You will be presented with questions. You have 1 hour to solve the questions. Good luck!
+    <div className="flex items-center justify-center h-screen bg-blue-50">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg">
+        <h2 className="text-3xl font-extrabold text-gray-800 mb-4 text-center">
+          Technical Interview Instructions
+        </h2>
+        <p className="mb-6 text-lg text-gray-700 text-center">
+          You will be presented with multiple technical interview questions. You have <span className="font-bold">1 hour</span> to solve the questions. Good luck!
         </p>
-        <button
-          onClick={handleStart}
-          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-        >
-          Start Interview
-        </button>
+
+        <ul className="list-disc list-inside mb-6 text-gray-600">
+          <li className="mb-2">No web searches</li>
+          <li className="mb-2">No use of generative AI tools</li>
+          <li className="mb-2">No collaboration with others</li>
+          <li className="mb-2">No use of notes or external materials</li>
+        </ul>
+
+        <div className="text-center">
+          <button
+            onClick={handleStart}
+            className="bg-blue-600 text-white font-semibold py-2 px-6 rounded-md hover:bg-blue-700 transition duration-200"
+          >
+            Start Interview
+          </button>
+        </div>
       </div>
     </div>
   );

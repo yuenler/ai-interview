@@ -74,7 +74,7 @@ export function ConsolePage() {
   const [isConnected, setIsConnected] = useState(false);
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
   const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion'>('questionList');
-  const [timeLeft, setTimeLeft] = useState(60); // 1 minute
+  const [timeLeft, setTimeLeft] = useState(3600); // 1 minute
   const prevCodeRef = useRef('');
   const timeOfLastCodeSendRef = useRef(Date.now());
 
@@ -203,6 +203,7 @@ export function ConsolePage() {
       prevCodeRef.current = text;
       timeOfLastCodeSendRef.current = Date.now();
       console.log('Sending code to server');
+      console.log(text);
       // Send the code text to the client
       const client = clientRef.current;
       client.sendUserMessageContent([
@@ -410,7 +411,7 @@ export function ConsolePage() {
    * Render the application
    */
   return (
-    <div data-component="ConsolePage">
+    <div >
       {/* Timer displayed at the top right */}
       <div className="fixed top-0 right-0 m-2 py-1 px-4 bg-gray-800 text-white text-lg font-semibold rounded-lg shadow-md">
         Time Left: {formatTime(timeLeft)}
@@ -455,7 +456,7 @@ function QuestionListPage({
   onSelectQuestion: (questionType: 'lboQuestion' | 'codingQuestion') => void;
 }) {
   return (
-    <div className="question-list-page flex items-center justify-center h-screen bg-gray-100">
+    <div className="question-list-page flex items-center justify-center h-screen bg-blue-50">
       <div className="text-center">
         <h2 className="text-4xl font-bold mb-8">Assigned Questions</h2>
         <div className="space-y-4">
