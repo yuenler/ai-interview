@@ -174,14 +174,14 @@ export default function Interview() {
       client.sendUserMessageContent([
         {
           type: `input_text`,
-          text: `Hello! I am now working on the coding question. The question is as follows: ${codingQuestion}`,
+          text: `Hello! I am now working on the coding question. The question is as follows: ${codingQuestion}. Please greet me and ask me this question again.`,
         },
       ]);
     } else if (questionType === 'financialQuestion') {
       client.sendUserMessageContent([
         {
           type: `input_text`,
-          text: `Hello! I am now working on the financial question. The first question is as follows: ${financialQuestion}. Can you please ask me this question again?`,
+          text: `Hello! I am now working on the financial question. The first question is as follows: ${financialQuestion}. Please greet me and ask me this question again.`,
         },
       ]);
     }
@@ -231,6 +231,7 @@ export default function Interview() {
   }
 
   const handleCellChange = (data: any[]) => {
+    console.log(data)
     const client = clientRef.current;
     const formattedData = JSON.stringify(data);
     client.sendUserMessageContent([
