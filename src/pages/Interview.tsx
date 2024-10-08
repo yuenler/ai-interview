@@ -8,9 +8,11 @@ import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
-import './ConsolePage.scss';
+import './Interview.scss';
 import CodingQuestionPage from './CodingQuestionPage';
 import FinancialQuestionPage from './FinancialQuestionPage';
+import LBOQuestionPage from './LBOQuestionPage';
+import QuestionListPage from './QuestionListPage';
 
 
 /**
@@ -36,7 +38,7 @@ interface RealtimeEvent {
   event: { [key: string]: any };
 }
 
-export function ConsolePage() {
+export function Interview() {
   /**
    * Instantiate:
    * - WavRecorder (speech input)
@@ -227,6 +229,17 @@ export function ConsolePage() {
       ]);
     }
   }
+
+  const handleCellChange = (data: any[]) => {
+    const client = clientRef.current;
+    const formattedData = JSON.stringify(data);
+    client.sendUserMessageContent([
+      {
+        type: `input_text`,
+        text: formattedData,
+      },
+    ]);
+  };
 
   /**
    * Auto-scroll the event logs
@@ -460,6 +473,7 @@ export function ConsolePage() {
       {currentPage === 'financialQuestion' && (
         <FinancialQuestionPage
           question={financialQuestion}
+          handleCellChange={handleCellChange}
           onBack={() => {
             setCurrentPage('questionList');
             disconnectConversation();
@@ -469,103 +483,3 @@ export function ConsolePage() {
     </div>
   );
 }
-/**
- * Question List Page Component
- */
-function QuestionListPage({
-  onSelectQuestion,
-}: {
-  onSelectQuestion: (questionType: 'lboQuestion' | 'codingQuestion' | 'financialQuestion') => void;
-}) {
-  return (
-    <div className="question-list-page flex items-center justify-center h-screen bg-blue-50">
-      <div className="text-center">
-      <h2 className="text-4xl font-bold mb-8">Assigned Questions</h2>
-      <div className="space-y-4 flex flex-col items-center">
-        <button
-        onClick={() => onSelectQuestion('lboQuestion')}
-        className="w-full max-w-md py-4 px-8 bg-blue-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
-        >
-        LBO Modeling
-        </button>
-        <button
-        onClick={() => onSelectQuestion('codingQuestion')}
-        className="w-full max-w-md py-4 px-8 bg-green-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300"
-        >
-        Algorithms
-        </button>
-        <button
-        onClick={() => onSelectQuestion('financialQuestion')}
-        className="w-full max-w-md py-4 px-8 bg-purple-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300"
-        >
-        Financial Analysis
-        </button>
-      </div>
-      </div>
-    </div>
-  );
-}
-
-
-/**
- * LBO Question Page Component
- */
-function LBOQuestionPage({
-  question,
-  onBack,
-}: {
-  question: string;
-  onBack: () => void;
-}) {
-  return (
-    <div>
-      <button
-        type="button"
-        className="py-1 m-2 px-4 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
-        onClick={onBack}
-      >
-        Back to Questions
-      </button>
-      <div className="flex flex-col items-center h-screen bg-gray-200">
-        <h2 className="text-2xl font-bold mt-8">Fill in the values in the spreadsheet.</h2>
-        <div className="w-full h-full mt-4">
-          <iframe
-            src="https://docs.google.com/spreadsheets/d/1S_1616WaRrMdYRQ5DM5_JZri3ycU8NtM4BK0SmpfH50/edit?usp=sharing"
-            title="LBO Sheet"
-            className="w-full h-full"
-          ></iframe>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// function FinancialQuestionPage({
-//   question,
-//   onBack,
-// }: {
-//   question: string;
-//   onBack: () => void;
-// }) {
-//   return (
-//     <div>
-//       <button
-//         type="button"
-//         className="py-1 m-2 px-4 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
-//         onClick={onBack}
-//       >
-//         Back to Questions
-//       </button>
-//       <div className="flex flex-col items-center h-screen bg-gray-200">
-//         <h2 className="text-2xl font-bold mt-8">Financial Analysis Question</h2>
-//         <div className="w-full h-full mt-4">
-//           <iframe
-//             src="https://docs.google.com/spreadsheets/d/1yDnEAod0OEngvA87obxYhg0cqaJCDY_QxnxAUQAxXO8/edit?usp=sharing"
-//             title="Financial Analysis Sheet"
-//             className="w-full h-full"
-//           ></iframe>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }

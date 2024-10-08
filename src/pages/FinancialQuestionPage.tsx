@@ -1,20 +1,14 @@
 // src/pages/FinancialQuestionPage.tsx
 
-import React, { useEffect, useState, useRef } from 'react';
-import { RealtimeClient } from '@openai/realtime-api-beta';
+import React, { useEffect, useState } from 'react';
 
 interface FinancialQuestionPageProps {
   question: string;
   onBack: () => void;
+  handleCellChange: (data: any[]) => void;
 }
 
-const FinancialQuestionPage: React.FC<FinancialQuestionPageProps> = ({ question, onBack }) => {
-  const clientRef = useRef<RealtimeClient>(
-    new RealtimeClient({
-      url: process.env.REACT_APP_LOCAL_RELAY_SERVER_URL || 'http://localhost:8081',
-    })
-  );
-
+const FinancialQuestionPage: React.FC<FinancialQuestionPageProps> = ({ question, onBack, handleCellChange }) => {
   const [sheetData, setSheetData] = useState<any[]>([]);
   const [previousData, setPreviousData] = useState<any[]>([]);
 
@@ -71,16 +65,6 @@ const FinancialQuestionPage: React.FC<FinancialQuestionPageProps> = ({ question,
     loadGapi();
   }, [previousData]);
 
-  const handleCellChange = (data: any[]) => {
-    const client = clientRef.current;
-    const formattedData = JSON.stringify(data);
-    client.sendUserMessageContent([
-      {
-        type: `input_text`,
-        text: formattedData,
-      },
-    ]);
-  };
 
   return (
     <div>
