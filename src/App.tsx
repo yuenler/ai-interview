@@ -5,6 +5,8 @@ import Permissions from './components/Permissions';
 import Instructions from './components/Instructions';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import GoogleSheetsComponent from './components/GoogleSheetsComponent';
+
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState('interview');
@@ -25,6 +27,8 @@ const App: React.FC = () => {
         return <Instructions navigateTo={navigateTo} />;
       case 'interview':
         return <ConsolePage />;
+      case 'googleSheets': // New case for Google Sheets
+        return <GoogleSheetsComponent />;
       default:
         return <Login navigateTo={navigateTo} />;
     }

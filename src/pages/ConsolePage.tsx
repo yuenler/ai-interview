@@ -1,3 +1,6 @@
+// Declare the gapi object
+declare const gapi: any;
+
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 import { RealtimeClient } from '@openai/realtime-api-beta';
@@ -8,6 +11,8 @@ import { WavRenderer } from '../utils/wav_renderer';
 
 import './ConsolePage.scss';
 import CodingQuestionPage from './CodingQuestionPage';
+import FinancialQuestionPage from './FinancialQuestionPage';
+
 
 /**
  * Running a local relay server will allow you to hide your API key
@@ -74,7 +79,7 @@ export function ConsolePage() {
   const [realtimeEvents, setRealtimeEvents] = useState<RealtimeEvent[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
-  const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion'>('questionList');
+  const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion' | 'financialQuestion'>('questionList');
   const [timeLeft, setTimeLeft] = useState(60); // 1 minute
 
   /**
@@ -82,6 +87,7 @@ export function ConsolePage() {
    */
   const lboQuestion = 'Fill in the missing values in this spreadsheet to complete the LBO model.';
   const codingQuestion = 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.';
+  const financialQuestion = 'Let’s start by building out the revenue projections for the store. Assume the average selling price (ASP) per item is $500, and the expected number of items sold per year is projected to grow by 5% annually. In year 1, the company expects to sell 10,000 units. In the Excel sheet, calculate the projected revenue for the next three years, based on the provided growth rate and ASP.';
 
   /**
    * Timer countdown effect
@@ -154,6 +160,13 @@ export function ConsolePage() {
         {
           type: `input_text`,
           text: `Hello! I am now working on the coding question. The question is as follows: ${codingQuestion}`,
+        },
+      ]);
+    } else if (questionType === 'financialQuestion') {
+      client.sendUserMessageContent([
+        {
+          type: `input_text`,
+          text: `Hello! I am now working on the financial question. The first question is as follows: ${financialQuestion}. Can you please ask me this question again?`,
         },
       ]);
     }
@@ -393,7 +406,6 @@ export function ConsolePage() {
       <div className="fixed top-0 right-0 m-2 py-1 px-4 bg-gray-800 text-white text-lg font-semibold rounded-lg shadow-md">
         Time Left: {formatTime(timeLeft)}
       </div>
-
       {currentPage === 'questionList' && (
         <QuestionListPage
           onSelectQuestion={(questionType) => {
@@ -420,6 +432,16 @@ export function ConsolePage() {
           onCodeChange={handleCodeChange}
         />
       )}
+
+      {currentPage === 'financialQuestion' && (
+        <FinancialQuestionPage
+          question={financialQuestion}
+          onBack={() => {
+            setCurrentPage('questionList');
+            disconnectConversation();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -429,7 +451,7 @@ export function ConsolePage() {
 function QuestionListPage({
   onSelectQuestion,
 }: {
-  onSelectQuestion: (questionType: 'lboQuestion' | 'codingQuestion') => void;
+  onSelectQuestion: (questionType: 'lboQuestion' | 'codingQuestion' | 'financialQuestion') => void;
 }) {
   return (
     <div className="question-list-page flex items-center justify-center h-screen bg-gray-100">
@@ -447,6 +469,12 @@ function QuestionListPage({
             className="w-full max-w-md py-4 px-8 bg-green-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300"
           >
             Coding Question
+          </button>
+          <button
+            onClick={() => onSelectQuestion('financialQuestion')}
+            className="w-full max-w-md py-4 px-8 bg-purple-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300"
+          >
+            New Financial Analysis Question
           </button>
         </div>
       </div>
@@ -487,3 +515,33 @@ function LBOQuestionPage({
     </div>
   );
 }
+
+// function FinancialQuestionPage({
+//   question,
+//   onBack,
+// }: {
+//   question: string;
+//   onBack: () => void;
+// }) {
+//   return (
+//     <div>
+//       <button
+//         type="button"
+//         className="py-1 m-2 px-4 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
+//         onClick={onBack}
+//       >
+//         Back to Questions
+//       </button>
+//       <div className="flex flex-col items-center h-screen bg-gray-200">
+//         <h2 className="text-2xl font-bold mt-8">Financial Analysis Question</h2>
+//         <div className="w-full h-full mt-4">
+//           <iframe
+//             src="https://docs.google.com/spreadsheets/d/1yDnEAod0OEngvA87obxYhg0cqaJCDY_QxnxAUQAxXO8/edit?usp=sharing"
+//             title="Financial Analysis Sheet"
+//             className="w-full h-full"
+//           ></iframe>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
