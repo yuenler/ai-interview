@@ -1,6 +1,3 @@
-// Declare the gapi object
-declare const gapi: any;
-
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 import { RealtimeClient } from '@openai/realtime-api-beta';
@@ -10,7 +7,7 @@ import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
 
 import CodingQuestion from '../components/CodingQuestion';
-import FinancialQuestion from '../components/FinancialQuestion.js';
+import FinancialQuestion from '../components/FinancialQuestion';
 import LBOQuestion from '../components/LBOQuestion';
 import QuestionList from '../components/QuestionList';
 
