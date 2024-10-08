@@ -8,11 +8,14 @@ import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
-import './Interview.scss';
+
 import CodingQuestion from '../components/CodingQuestion';
-import FinancialQuestion from './FinancialQuestion';
+import FinancialQuestion from '../components/FinancialQuestion.js';
 import LBOQuestion from '../components/LBOQuestion';
 import QuestionList from '../components/QuestionList';
+
+import './Interview.scss';
+
 
 
 /**
