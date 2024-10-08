@@ -10,9 +10,9 @@ import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
 import './Interview.scss';
 import CodingQuestion from '../components/CodingQuestion';
-import FinancialQuestionPage from './FinancialQuestion';
-import LBOQuestionPage from '../components/LBOQuestion';
-import QuestionListPage from '../components/QuestionList';
+import FinancialQuestion from './FinancialQuestion';
+import LBOQuestion from '../components/LBOQuestion';
+import QuestionList from '../components/QuestionList';
 
 
 /**
@@ -443,7 +443,7 @@ export default function Interview() {
         Time Left: {formatTime(timeLeft)}
       </div>
       {currentPage === 'questionList' && (
-        <QuestionListPage
+        <QuestionList
           onSelectQuestion={(questionType) => {
             setCurrentPage(questionType);
             connectConversation(questionType);
@@ -452,7 +452,7 @@ export default function Interview() {
       )}
 
       {currentPage === 'lboQuestion' && (
-        <LBOQuestionPage
+        <LBOQuestion
           question={lboQuestion}
           onBack={() => setCurrentPage('questionList')}
         />
@@ -471,7 +471,7 @@ export default function Interview() {
       )}
 
       {currentPage === 'financialQuestion' && (
-        <FinancialQuestionPage
+        <FinancialQuestion
           question={financialQuestion}
           handleCellChange={handleCellChange}
           onBack={() => {
