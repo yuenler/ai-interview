@@ -9,10 +9,10 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
 import './Interview.scss';
-import CodingQuestionPage from './CodingQuestionPage';
-import FinancialQuestionPage from './FinancialQuestionPage';
-import LBOQuestionPage from './LBOQuestionPage';
-import QuestionListPage from './QuestionListPage';
+import CodingQuestion from '../components/CodingQuestion';
+import FinancialQuestionPage from './FinancialQuestion';
+import LBOQuestionPage from '../components/LBOQuestion';
+import QuestionListPage from '../components/QuestionList';
 
 
 /**
@@ -38,7 +38,7 @@ interface RealtimeEvent {
   event: { [key: string]: any };
 }
 
-export function Interview() {
+export default function Interview() {
   /**
    * Instantiate:
    * - WavRecorder (speech input)
@@ -459,7 +459,7 @@ export function Interview() {
       )}
 
       {currentPage === 'codingQuestion' && (
-        <CodingQuestionPage
+        <CodingQuestion
           onBack={() => {
             setCurrentPage('questionList');
             disconnectConversation();

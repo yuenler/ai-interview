@@ -3,7 +3,7 @@
 /**
  * LBO Question Page Component
  */
-function LBOQuestionPage({
+function LBOQuestion({
   question,
   onBack,
 }: {
@@ -33,4 +33,4 @@ function LBOQuestionPage({
   );
 }
 
-export default LBOQuestionPage;
+export default LBOQuestion;

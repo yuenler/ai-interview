@@ -1,11 +1,10 @@
-import { Interview } from './pages/Interview';
+import Interview from './pages/Interview';
 // import './App.scss';
 import React, { useState } from 'react';
-import Permissions from './components/Permissions';
-import Instructions from './components/Instructions';
-import Login from './components/Login';
-import Signup from './components/Signup';
-import GoogleSheetsComponent from './components/GoogleSheetsComponent';
+import Permissions from './pages/Permissions';
+import Instructions from './pages/Instructions';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 
 const App: React.FC = () => {
@@ -27,8 +26,6 @@ const App: React.FC = () => {
         return <Instructions navigateTo={navigateTo} />;
       case 'interview':
         return <Interview />;
-      case 'googleSheets': // New case for Google Sheets
-        return <GoogleSheetsComponent />;
       default:
         return <Login navigateTo={navigateTo} />;
     }

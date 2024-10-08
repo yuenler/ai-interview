@@ -1,5 +1,5 @@
 
-function QuestionListPage({
+function QuestionList({
   onSelectQuestion,
 }: {
   onSelectQuestion: (questionType: 'lboQuestion' | 'codingQuestion' | 'financialQuestion') => void;
@@ -33,4 +33,4 @@ function QuestionListPage({
   );
 }
 
-export default QuestionListPage;
+export default QuestionList;

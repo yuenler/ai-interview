@@ -3,9 +3,9 @@ import Editor from 'react-simple-code-editor';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/vs2015.css';
 import 'highlight.js/lib/languages/javascript'; // Replace with your desired language
-import './CodingQuestionPage.scss'; // Custom styles for line numbers
+import './CodingQuestion.scss'; // Custom styles for line numbers
 
-function CodingQuestionPage({
+function CodingQuestion({
   onBack,
   onCodeChange,
   code,
@@ -75,4 +75,4 @@ function CodingQuestionPage({
   );
 }
 
-export default CodingQuestionPage;
+export default CodingQuestion;

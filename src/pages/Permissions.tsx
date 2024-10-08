@@ -108,16 +108,17 @@ const Permissions: React.FC<Props> = ({ navigateTo }) => {
           {errorMessage && (
             <p className="text-red-700 bg-red-100 py-2 px-4 rounded mb-4">{errorMessage}</p>
           )}
-          {mediaStream && permissions[step] === 'Webcam' && (
+            {mediaStream && permissions[step] === 'Webcam' && (
             <video
               autoPlay
               playsInline
               ref={(video) => {
-                if (video) video.srcObject = mediaStream;
+              if (video) video.srcObject = mediaStream;
               }}
               className="w-full rounded-md shadow-md mt-4"
+              style={{ transform: 'scaleX(-1)' }}
             />
-          )}
+            )}
           {mediaStream && permissions[step] === 'Screen Sharing' && (
             <video
               autoPlay

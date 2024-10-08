@@ -8,7 +8,7 @@ interface FinancialQuestionPageProps {
   handleCellChange: (data: any[]) => void;
 }
 
-const FinancialQuestionPage: React.FC<FinancialQuestionPageProps> = ({ question, onBack, handleCellChange }) => {
+const FinancialQuestion: React.FC<FinancialQuestionPageProps> = ({ question, onBack, handleCellChange }) => {
   const [sheetData, setSheetData] = useState<any[]>([]);
   const [previousData, setPreviousData] = useState<any[]>([]);
 
@@ -89,4 +89,4 @@ const FinancialQuestionPage: React.FC<FinancialQuestionPageProps> = ({ question,
   );
 }
 
-export default FinancialQuestionPage;
+export default FinancialQuestion;
