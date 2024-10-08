@@ -1,55 +1,76 @@
-/**
- * Coding Question Page Component
- */
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Editor from 'react-simple-code-editor';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/default.css'; // Optional: You can choose another theme
-
+import 'highlight.js/styles/vs2015.css';
 import 'highlight.js/lib/languages/javascript'; // Replace with your desired language
+import './CodingQuestionPage.scss'; // Custom styles for line numbers
 
 function CodingQuestionPage({
-  question,
   onBack,
   onCodeChange,
+  code,
 }: {
-  question: string;
+  code: string;
   onBack: () => void;
   onCodeChange: (code: string) => void;
 }) {
-  const [code, setCode] = useState(`# ${question}\n\n# Write your code here`);
 
-  // Debounce code changes to send significant changes to the client
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      onCodeChange(code);
-    }, 5000); // Adjust the debounce timing as needed
+  const renderLineNumbers = (text: string) => {
+    return Array.from(text.split('\n'), (_, i) => {
+      return (
+        <div className="line-number" key={i}>
+          {i + 1}
+        </div>
+      );
+    });
+  };
 
-    return () => clearTimeout(timeoutId);
-  }, [code]);
+  const fontSizeRem = 0.8;
 
   return (
-    <div>
-      <button
-      type="button"
-      className="py-1 m-2 px-4 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
-      onClick={onBack}
-      >
-      Back to Questions
-      </button>
-      <Editor
-      value={code}
-      onValueChange={(newCode) => setCode(newCode)}
-      highlight={(code) => hljs.highlight(code, { language: 'python' }).value} // Use Python for highlighting
-      padding={10}
+    <div
       style={{
-        fontFamily: '"Fira code", "Fira Mono", monospace',
-        fontSize: 16,
-        border: '1px solid #ddd',
-        borderRadius: '4px',
-        minHeight: '300px',
+      color: '#fff',
+      backgroundColor: '#222',
+      padding: '20px',
+      height: '100vh',
+      width: '100vw',
+      boxSizing: 'border-box',
       }}
-      />
+    >
+      <button
+        type="button"
+        className="py-1 m-2 px-4 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
+        onClick={onBack}
+      >
+        Back to Questions
+      </button>
+
+      <div style={{ display: 'flex' }}>
+        {/* Line numbers */}
+        <div
+          className="line-numbers font-monospace"
+          style={{
+            fontSize: `${fontSizeRem}rem`,
+          }}
+        >
+          {renderLineNumbers(code)}
+        </div>
+
+        {/* Code Editor */}
+        <Editor
+          value={code}
+          onValueChange={(newCode) => onCodeChange(newCode)}
+          highlight={(code) => hljs.highlight(code, { language: 'python' }).value} // Use Python for highlighting
+          padding="1em"
+          autoFocus
+          style={{
+            fontFamily: 'monospace',
+            fontSize: `${fontSizeRem}rem`,
+            minHeight: `${fontSizeRem * 30}rem`,
+          }}
+        />
+      </div>
     </div>
   );
 }

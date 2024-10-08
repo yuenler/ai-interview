@@ -8,7 +8,6 @@ import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
-
 import './ConsolePage.scss';
 import CodingQuestionPage from './CodingQuestionPage';
 import FinancialQuestionPage from './FinancialQuestionPage';
@@ -80,7 +79,12 @@ export function ConsolePage() {
   const [isConnected, setIsConnected] = useState(false);
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
   const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion' | 'financialQuestion'>('questionList');
-  const [timeLeft, setTimeLeft] = useState(60); // 1 minute
+  const [timeLeft, setTimeLeft] = useState(3600); // 1 minute
+  const prevCodeRef = useRef('');
+  const timeOfLastCodeSendRef = useRef(Date.now());
+
+  const codeRef = useRef('');
+
 
   /**
    * Questions assigned to the user
@@ -88,24 +92,33 @@ export function ConsolePage() {
   const lboQuestion = 'Fill in the missing values in this spreadsheet to complete the LBO model.';
   const codingQuestion = 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.';
   const financialQuestion = 'Let’s start by building out the revenue projections for the store. Assume the average selling price (ASP) per item is $500, and the expected number of items sold per year is projected to grow by 5% annually. In year 1, the company expects to sell 10,000 units. In the Excel sheet, calculate the projected revenue for the next three years, based on the provided growth rate and ASP.';
+  
+  const [code, setCode] = useState(`# ${codingQuestion}\n\n# Write your code here`);
 
   /**
    * Timer countdown effect
    */
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prevTime) => prevTime - 1);
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+          disconnectConversation();
+          setCurrentPage('questionList');
+          clearInterval(timer);
+          return 0;
+        }
+        return prevTime - 1;
+      });
     }, 1000);
-
-    // when timeLeft is 0, disconnect the conversation and go back to question list
-    if (timeLeft <= 0) {
-      disconnectConversation();
-      setCurrentPage('questionList');
-      return () => clearInterval(timer);
-    }
-
+  
     return () => clearInterval(timer);
-  }, []);
+  }, [timeLeft]);
+
+  // whenever code changes, update the ref
+  useEffect(() => {
+    codeRef.current = code;
+  }, [code]);
+  
 
   /**
    * Format time as hh:mm:ss
@@ -198,16 +211,22 @@ export function ConsolePage() {
   /**
    * Handle code changes from the coding question page
    */
-  const handleCodeChange = (code: string) => {
-    // Send the code text to the client
-    const client = clientRef.current;
-    client.sendUserMessageContent([
-      {
-        type: `input_text`,
-        text: code,
-      },
-    ]);
-  };
+  const handleCodeChange = (text: string) => {
+    if (Date.now() - timeOfLastCodeSendRef.current > 5000 && text !== prevCodeRef.current) {
+      prevCodeRef.current = text;
+      timeOfLastCodeSendRef.current = Date.now();
+      console.log('Sending code to server');
+      console.log(text);
+      // Send the code text to the client
+      const client = clientRef.current;
+      client.sendUserMessageContent([
+        {
+          type: `input_text`,
+          text: text,
+        },
+      ]);
+    }
+  }
 
   /**
    * Auto-scroll the event logs
@@ -374,6 +393,10 @@ export function ConsolePage() {
       }
     });
     client.on('conversation.updated', async ({ item, delta }: any) => {
+      if (item.role === "user"){
+        handleCodeChange(codeRef.current);
+      }
+
       const items = client.conversation.getItems();
       if (delta?.audio) {
         wavStreamPlayer.add16BitPCM(delta.audio, item.id);
@@ -401,7 +424,7 @@ export function ConsolePage() {
    * Render the application
    */
   return (
-    <div data-component="ConsolePage">
+    <div >
       {/* Timer displayed at the top right */}
       <div className="fixed top-0 right-0 m-2 py-1 px-4 bg-gray-800 text-white text-lg font-semibold rounded-lg shadow-md">
         Time Left: {formatTime(timeLeft)}
@@ -424,12 +447,13 @@ export function ConsolePage() {
 
       {currentPage === 'codingQuestion' && (
         <CodingQuestionPage
-          question={codingQuestion}
           onBack={() => {
             setCurrentPage('questionList');
             disconnectConversation();
           }}
-          onCodeChange={handleCodeChange}
+          onCodeChange={(code) => {
+            setCode(code)}}
+          code={code}
         />
       )}
 
@@ -454,7 +478,7 @@ function QuestionListPage({
   onSelectQuestion: (questionType: 'lboQuestion' | 'codingQuestion' | 'financialQuestion') => void;
 }) {
   return (
-    <div className="question-list-page flex items-center justify-center h-screen bg-gray-100">
+    <div className="question-list-page flex items-center justify-center h-screen bg-blue-50">
       <div className="text-center">
         <h2 className="text-4xl font-bold mb-8">Assigned Questions</h2>
         <div className="space-y-4">
@@ -503,7 +527,7 @@ function LBOQuestionPage({
         Back to Questions
       </button>
       <div className="flex flex-col items-center h-screen bg-gray-200">
-        <h2 className="text-2xl font-bold mt-8">LBO Modeling Question</h2>
+        <h2 className="text-2xl font-bold mt-8">Fill in the values in the spreadsheet.</h2>
         <div className="w-full h-full mt-4">
           <iframe
             src="https://docs.google.com/spreadsheets/d/1S_1616WaRrMdYRQ5DM5_JZri3ycU8NtM4BK0SmpfH50/edit?usp=sharing"
