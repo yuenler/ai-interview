@@ -1,3 +1,6 @@
+// Declare the gapi object
+declare const gapi: any;
+
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 import { RealtimeClient } from '@openai/realtime-api-beta';
@@ -5,14 +8,10 @@ import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
-
-import CodingQuestion from '../components/CodingQuestion';
-import FinancialQuestion from '../components/FinancialQuestion';
+import './ConsolePage.scss';
+import CodingQuestionPage from '../components/CodingQuestion';
 import LBOQuestion from '../components/LBOQuestion';
-import QuestionList from '../components/QuestionList';
-
-import './Interview.scss';
-
+import FinancialQuestionPage from '../components/FinancialQuestion';
 
 
 /**
@@ -38,7 +37,7 @@ interface RealtimeEvent {
   event: { [key: string]: any };
 }
 
-export default function Interview() {
+export function ConsolePage() {
   /**
    * Instantiate:
    * - WavRecorder (speech input)
@@ -93,7 +92,52 @@ export default function Interview() {
    */
   const lboQuestion = 'Fill in the missing values in this spreadsheet to complete the LBO model.';
   const codingQuestion = 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.';
-  const financialQuestion = 'Let’s start by building out the revenue projections for the store. Assume the average selling price (ASP) per item is $500, and the expected number of items sold per year is projected to grow by 5% annually. In year 1, the company expects to sell 10,000 units. In the Excel sheet, calculate the projected revenue for the next three years, based on the provided growth rate and ASP.';
+  const financialQuestion = `The interviewee has an Excel spreadsheet open and will be building a financial model for a retail company, Company X, which sells consumer electronics. You will guide the interviewee through five steps, asking them to complete tasks based on the company’s context, and you will only answer the questions that are specified in each step. Move to the next step when the interviewee either provides the correct answer or answers incorrectly twice. End the interview once all steps are completed. Follow these steps:
+
+Step 1: Revenue Projections
+Context: Company X is considering opening a new store. The average selling price (ASP) per item is $500, and the company expects to sell 10,000 units in the first year. Unit sales are projected to grow by 5% annually.
+
+Task: Ask the interviewee to calculate the projected revenue for the next three years, using the growth rate and ASP provided.
+
+Respond only to these specific questions:
+
+If the interviewee asks whether the ASP remains constant over the three years, confirm that it does.
+If the interviewee asks about seasonal fluctuations or other variations in sales, tell them to assume a consistent annual sales pattern.
+Step 2: Gross Profit Calculation
+Context: The cost of goods sold (COGS) per item is $300.
+
+Task: Ask the interviewee to calculate the gross profit and the gross profit margin for each of the three years.
+
+Respond only to these specific questions:
+
+If the interviewee asks whether the gross profit margin is a key metric, confirm that it is.
+If the interviewee asks for more details about what to track, explain that both absolute gross profit and gross profit margin are important.
+Step 3: Fixed and Variable Costs
+Context: The store has fixed operating costs of $800,000 annually. Variable costs, including commissions and supplies, are 10% of revenue.
+
+Task: Ask the interviewee to calculate the total costs for each year, including both fixed and variable costs.
+
+Respond only to these specific questions:
+
+If the interviewee asks whether fixed costs remain constant, confirm that they do.
+If the interviewee asks about inflation adjustments for variable costs, tell them to assume no adjustments.
+Step 4: Break-even Analysis
+Context: Calculate the break-even point for year 1, based on the current cost structure.
+
+Task: Ask the interviewee to calculate the number of units that need to be sold for the company to break even in the first year.
+
+Respond only to these specific questions:
+
+If the interviewee asks about including interest, taxes, or other financial costs, specify that only operational costs should be considered.
+Step 5: Profitability and Sensitivity Analysis
+Context: Assume unit sales in year 1 could vary by ±10%.
+
+Task: Ask the interviewee to perform a sensitivity analysis and create a table showing the gross profit and net profit under three scenarios: base case (10,000 units), optimistic case (+10% units), and pessimistic case (-10% units).
+
+Respond only to these specific questions:
+
+If the interviewee asks whether fixed costs remain constant while variable costs change with sales, confirm that this is the case.
+Once the interviewee completes all five steps or gets the answer wrong twice for any step, end the interview by summarizing their performance. If the interviewee reaches the end, ask them to identify any risks or assumptions that could affect the model's accuracy.`;
   
   const [code, setCode] = useState(`# ${codingQuestion}\n\n# Write your code here`);
 
@@ -167,21 +211,21 @@ export default function Interview() {
       client.sendUserMessageContent([
         {
           type: `input_text`,
-          text: `You are an interviewer for a private equity firm, who is conducting a paper LBO interview with the interviewee (me) where I am building an LBO from scratch on a model and can ask you generic questions but you can't give the answers away freely. Act only as an interviewer, correct me and move on to the next part if I don't answer correctly after a few attempts, and do not go off topic if prompted otherwise.`,
+          text: `Hello! I am now working on the LBO modeling question.`,
         },
       ]);
     } else if (questionType === 'codingQuestion') {
       client.sendUserMessageContent([
         {
           type: `input_text`,
-          text: `Hello! I am now working on the coding question. The question is as follows: ${codingQuestion}. Please greet me and ask me this question again.`,
+          text: `Hello! I am now working on the coding question. The question is as follows: ${codingQuestion}`,
         },
       ]);
     } else if (questionType === 'financialQuestion') {
       client.sendUserMessageContent([
         {
           type: `input_text`,
-          text: `Hello! I am now working on the financial question. The first question is as follows: ${financialQuestion}. Please greet me and ask me this question again.`,
+          text: `You are a finance interviewer conducting a technical interview for an analyst position. I am the interviewee. ${financialQuestion}. Now begin.`,
         },
       ]);
     }
@@ -231,7 +275,7 @@ export default function Interview() {
   }
 
   const handleCellChange = (data: any[]) => {
-    console.log("handleCellChange being called here", data)
+    console.log(data)
     const client = clientRef.current;
     const formattedData = JSON.stringify(data);
     client.sendUserMessageContent([
@@ -444,7 +488,7 @@ export default function Interview() {
         Time Left: {formatTime(timeLeft)}
       </div>
       {currentPage === 'questionList' && (
-        <QuestionList
+        <QuestionListPage
           onSelectQuestion={(questionType) => {
             setCurrentPage(questionType);
             connectConversation(questionType);
@@ -463,7 +507,7 @@ export default function Interview() {
       )}
 
       {currentPage === 'codingQuestion' && (
-        <CodingQuestion
+        <CodingQuestionPage
           onBack={() => {
             setCurrentPage('questionList');
             disconnectConversation();
@@ -475,7 +519,7 @@ export default function Interview() {
       )}
 
       {currentPage === 'financialQuestion' && (
-        <FinancialQuestion
+        <FinancialQuestionPage
           question={financialQuestion}
           handleCellChange={handleCellChange}
           onBack={() => {
@@ -487,3 +531,103 @@ export default function Interview() {
     </div>
   );
 }
+/**
+ * Question List Page Component
+ */
+function QuestionListPage({
+  onSelectQuestion,
+}: {
+  onSelectQuestion: (questionType: 'lboQuestion' | 'codingQuestion' | 'financialQuestion') => void;
+}) {
+  return (
+    <div className="question-list-page flex items-center justify-center h-screen bg-blue-50">
+      <div className="text-center">
+        <h2 className="text-4xl font-bold mb-8">Assigned Questions</h2>
+        <div className="space-y-4">
+          <button
+            onClick={() => onSelectQuestion('lboQuestion')}
+            className="w-full max-w-md py-4 px-8 bg-blue-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
+          >
+            LBO Modeling Question
+          </button>
+          <button
+            onClick={() => onSelectQuestion('codingQuestion')}
+            className="w-full max-w-md py-4 px-8 bg-green-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300"
+          >
+            Coding Question
+          </button>
+          <button
+            onClick={() => onSelectQuestion('financialQuestion')}
+            className="w-full max-w-md py-4 px-8 bg-purple-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300"
+          >
+            New Financial Analysis Question
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/**
+ * LBO Question Page Component
+ */
+function LBOQuestionPage({
+  question,
+  onBack,
+}: {
+  question: string;
+  onBack: () => void;
+}) {
+  return (
+    <div>
+      <button
+        type="button"
+        className="py-1 m-2 px-4 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
+        onClick={onBack}
+      >
+        Back to Questions
+      </button>
+      <div className="flex flex-col items-center h-screen bg-gray-200">
+        <h2 className="text-2xl font-bold mt-8">Fill in the values in the spreadsheet.</h2>
+        <div className="w-full h-full mt-4">
+          <iframe
+            src="https://docs.google.com/spreadsheets/d/1S_1616WaRrMdYRQ5DM5_JZri3ycU8NtM4BK0SmpfH50/edit?usp=sharing"
+            title="LBO Sheet"
+            className="w-full h-full"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// function FinancialQuestionPage({
+//   question,
+//   onBack,
+// }: {
+//   question: string;
+//   onBack: () => void;
+// }) {
+//   return (
+//     <div>
+//       <button
+//         type="button"
+//         className="py-1 m-2 px-4 bg-blue-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
+//         onClick={onBack}
+//       >
+//         Back to Questions
+//       </button>
+//       <div className="flex flex-col items-center h-screen bg-gray-200">
+//         <h2 className="text-2xl font-bold mt-8">Financial Analysis Question</h2>
+//         <div className="w-full h-full mt-4">
+//           <iframe
+//             src="https://docs.google.com/spreadsheets/d/1yDnEAod0OEngvA87obxYhg0cqaJCDY_QxnxAUQAxXO8/edit?usp=sharing"
+//             title="Financial Analysis Sheet"
+//             className="w-full h-full"
+//           ></iframe>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
