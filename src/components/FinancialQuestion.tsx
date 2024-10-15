@@ -62,7 +62,8 @@ const FinancialQuestion: React.FC<FinancialQuestionPageProps> = ({ question, onB
           // setSheetData(newData);
           const parsedData = JSON.parse(newData.body);
           console.log('parsed data:', parsedData);
-          setSheetData(parsedData);
+          const transformedData = Object.entries(parsedData).map(([key, value]) => [key, value]);
+          setSheetData(transformedData);
           console.log('sheet data:', sheetData);
           handleCellChange(newData);
           setChangeDetected(`Data changed at ${new Date().toLocaleTimeString()}`);

@@ -38,12 +38,12 @@ interface RealtimeEvent {
   event: { [key: string]: any };
 }
 
-// Define time limits for each question type (in seconds)
-const TIME_LIMITS = {
-  lboQuestion: 300, // 5 minutes
-  codingQuestion: 360, // 10 minutes
-  financialQuestion: 300, // 5 minutes
-};
+// Define topics and time limits for the financial question interview
+const FINANCIAL_TOPICS = [
+  { id: 'revenueProjections', text: 'Let’s start by building out the revenue projections...', timeLimit: 60 },
+  { id: 'costAnalysis', text: 'Next, let’s analyze the cost structure...', timeLimit: 60 },
+  { id: 'profitForecast', text: 'Finally, let’s forecast the profit...', timeLimit: 60 },
+];
 
 export default function Interview() {
   /**
@@ -88,7 +88,8 @@ export default function Interview() {
   const [isConnected, setIsConnected] = useState(false);
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
   const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion' | 'financialQuestion'>('questionList');
-  const [timeLeft, setTimeLeft] = useState(TIME_LIMITS[currentPage]); // 1 minute
+  const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(FINANCIAL_TOPICS[currentTopicIndex].timeLimit); // 1 minute
   const prevCodeRef = useRef('');
   const timeOfLastCodeSendRef = useRef(Date.now());
 
@@ -123,11 +124,37 @@ export default function Interview() {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
+  // Function to move to the next topic
+  const moveToNextTopic = useCallback(() => {
+    setCurrentTopicIndex((prevIndex) => {
+      const nextIndex = (prevIndex + 1) % FINANCIAL_TOPICS.length;
+      setTimeLeft(FINANCIAL_TOPICS[nextIndex].timeLimit);
+      return nextIndex;
+    });
+  }, []);
+
+  // Timer countdown effect for topics
+  useEffect(() => {
+    if (currentPage === 'financialQuestion') {
+      const timer = setInterval(() => {
+        setTimeLeft((prevTime) => {
+          if (prevTime <= 1) {
+            clearInterval(timer);
+            moveToNextTopic();
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [currentPage, currentTopicIndex, moveToNextTopic]);
+
   // whenever code changes, update the ref
   useEffect(() => {
     codeRef.current = code;
   }, [code]);
-  
 
   /**
    * Format time as hh:mm:ss
@@ -454,6 +481,8 @@ export default function Interview() {
         <QuestionList
           onSelectQuestion={(questionType) => {
             setCurrentPage(questionType);
+            setTimeLeft(FINANCIAL_TOPICS[0].timeLimit); // for timed topic transition
+            setCurrentTopicIndex(0); // for timed topic transition
             connectConversation(questionType);
           }}
         />
@@ -483,7 +512,7 @@ export default function Interview() {
 
       {currentPage === 'financialQuestion' && (
         <FinancialQuestion
-          question={financialQuestion}
+          question={FINANCIAL_TOPICS[currentTopicIndex].text}
           handleCellChange={handleCellChange}
           onBack={() => {
             setCurrentPage('questionList');
