@@ -38,6 +38,13 @@ interface RealtimeEvent {
   event: { [key: string]: any };
 }
 
+// Define time limits for each question type (in seconds)
+const TIME_LIMITS = {
+  lboQuestion: 300, // 5 minutes
+  codingQuestion: 360, // 10 minutes
+  financialQuestion: 300, // 5 minutes
+};
+
 export default function Interview() {
   /**
    * Instantiate:
@@ -81,7 +88,7 @@ export default function Interview() {
   const [isConnected, setIsConnected] = useState(false);
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
   const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion' | 'financialQuestion'>('questionList');
-  const [timeLeft, setTimeLeft] = useState(3600); // 1 minute
+  const [timeLeft, setTimeLeft] = useState(TIME_LIMITS[currentPage]); // 1 minute
   const prevCodeRef = useRef('');
   const timeOfLastCodeSendRef = useRef(Date.now());
 
@@ -230,7 +237,7 @@ export default function Interview() {
     }
   }
 
-  const handleCellChange = (data: any[]) => {
+  const handleCellChange = useCallback((data: any[]) => { //added useCallback
     console.log("handleCellChange being called here", data)
     const client = clientRef.current;
     const formattedData = JSON.stringify(data);
@@ -240,7 +247,7 @@ export default function Interview() {
         text: formattedData,
       },
     ]);
-  };
+  }, []);
 
   /**
    * Auto-scroll the event logs
