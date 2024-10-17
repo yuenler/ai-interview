@@ -17,6 +17,7 @@
     "buffer": "^6.0.3",
     "codemirror": "^5.65.18",
     "dotenv": "^16.4.5",
+    "firebase": "^10.14.1",
     "highlight.js": "^11.10.0",
     "leaflet": "^1.9.4",
     "lodash": "^4.17.21",

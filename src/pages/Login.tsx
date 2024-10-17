@@ -1,4 +1,11 @@
+// Login.tsx
 import React, { useState } from 'react';
+import { auth } from '../firebase';
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+} from 'firebase/auth';
 
 interface Props {
   navigateTo: (page: string) => void;
@@ -8,10 +15,26 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Perform login logic here
-    navigateTo('permissions');
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      navigateTo('permissions');
+    } catch (error: any) {
+      console.error('Error signing in:', error);
+      alert(error.message);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      navigateTo('permissions');
+    } catch (error: any) {
+      console.error('Error signing in with Google:', error);
+      alert(error.message);
+    }
   };
 
   return (
@@ -23,6 +46,7 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
           Sign in to continue
         </h2>
+        {/* Email Input */}
         <div className="mb-4">
           <label className="block text-gray-700 font-bold">Email</label>
           <input
@@ -34,6 +58,7 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
             required
           />
         </div>
+        {/* Password Input */}
         <div className="mb-4">
           <label className="block text-gray-700 font-bold">Password</label>
           <input
@@ -45,6 +70,7 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
             required
           />
         </div>
+        {/* Forgot Password Link */}
         <div className="text-right mb-6">
           <a
             href="#"
@@ -54,12 +80,22 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
             Forgot password?
           </a>
         </div>
+        {/* Sign In Button */}
         <button
           type="submit"
           className="w-full font-bold bg-blue-600 text-white py-3 rounded-md hover:bg-blue-500 transition duration-300"
         >
           Sign in
         </button>
+        {/* Google Sign In Button */}
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          className="w-full font-bold bg-red-600 text-white py-3 rounded-md hover:bg-red-500 transition duration-300 mt-4"
+        >
+          Sign in with Google
+        </button>
+        {/* Navigate to Signup */}
         <p
           className="text-sm font-bold text-gray-600 mt-4 text-center cursor-pointer"
           onClick={() => navigateTo('signup')}
