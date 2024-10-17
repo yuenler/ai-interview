@@ -58,15 +58,29 @@ const FinancialQuestion: React.FC<FinancialQuestionPageProps> = ({ question, onB
 
         if (JSON.stringify(newData) !== JSON.stringify(previousData)) {
           console.log('Data changed:', newData);
+          console.log('Old data:', previousData);
           setPreviousData(newData);
-          // setSheetData(newData);
-          const parsedData = JSON.parse(newData.body);
-          console.log('parsed data:', parsedData);
-          const transformedData = Object.entries(parsedData).map(([key, value]) => [key, value]);
-          setSheetData(transformedData);
-          console.log('sheet data:', sheetData);
-          handleCellChange(newData);
+          if (newData.body) {
+            const parsedData = JSON.parse(newData.body);
+            console.log('Parsed data:', parsedData);
+
+            // Transform the parsed data as needed
+            const transformedData = Object.entries(parsedData).map(([key, value]) => [key, value]);
+
+            // Update sheetData state with the transformed data
+            setSheetData(transformedData);
+            console.log('Updated sheet data:', transformedData);
+            
+            // Notify that the sheet data has changed
+            handleCellChange(transformedData);
+          } else {
+            console.log('No body in the new data:', newData);
+          }
+
+          // Optionally update a change detection indicator
           setChangeDetected(`Data changed at ${new Date().toLocaleTimeString()}`);
+        } else {
+          console.log('Data has not changed.');
         }
       }, 5000); // Poll every 5 seconds
 

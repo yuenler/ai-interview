@@ -13,7 +13,7 @@ function QuestionList({
         onClick={() => onSelectQuestion('lboQuestion')}
         className="w-full max-w-md py-4 px-8 bg-blue-500 text-white text-2xl font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
         >
-        LBO Modeling
+        LBO Modeling 
         </button>
         <button
         onClick={() => onSelectQuestion('codingQuestion')}

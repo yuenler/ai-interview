@@ -40,9 +40,9 @@ interface RealtimeEvent {
 
 // Define topics and time limits for the financial question interview
 const FINANCIAL_TOPICS = [
-  { id: 'revenueProjections', text: 'Let’s start by building out the revenue projections...', timeLimit: 60 },
-  { id: 'costAnalysis', text: 'Next, let’s analyze the cost structure...', timeLimit: 60 },
-  { id: 'profitForecast', text: 'Finally, let’s forecast the profit...', timeLimit: 60 },
+  { id: 'revenueProjections', text: 'Let’s start by building out the revenue projections...', timeLimit: 200 },
+  { id: 'costAnalysis', text: 'Next, let’s analyze the cost structure...', timeLimit: 200 },
+  { id: 'profitForecast', text: 'Finally, let’s forecast the profit...', timeLimit: 200 },
 ];
 
 export default function Interview() {
@@ -92,6 +92,8 @@ export default function Interview() {
   const [timeLeft, setTimeLeft] = useState(FINANCIAL_TOPICS[currentTopicIndex].timeLimit); // 1 minute
   const prevCodeRef = useRef('');
   const timeOfLastCodeSendRef = useRef(Date.now());
+  const prevCellRef = useRef('');
+  const timeOfLastCellSendRef = useRef(Date.now());
 
   const codeRef = useRef('');
 
@@ -99,7 +101,7 @@ export default function Interview() {
   /**
    * Questions assigned to the user
    */
-  const lboQuestion = 'Fill in the missing values in this spreadsheet to complete the LBO model.';
+  const lboQuestion = 'Fill in the missing values in this spreadsheet to complete the LBO model. '
   const codingQuestion = 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.';
   const financialQuestion = 'Let’s start by building out the revenue projections for the store. Assume the average selling price (ASP) per item is $500, and the expected number of items sold per year is projected to grow by 5% annually. In year 1, the company expects to sell 10,000 units. In the Excel sheet, calculate the projected revenue for the next three years, based on the provided growth rate and ASP.';
   
@@ -201,7 +203,7 @@ export default function Interview() {
       client.sendUserMessageContent([
         {
           type: `input_text`,
-          text: `You are an interviewer for a private equity firm, who is conducting a paper LBO interview with the interviewee (me) where I am building an LBO from scratch on a model and can ask you generic questions but you can't give the answers away freely. Act only as an interviewer, correct me and move on to the next part if I don't answer correctly after a few attempts, and do not go off topic if prompted otherwise.`,
+          text: `You are an interviewer for a private equity firm, who is conducting a paper LBO interview with the interviewee (me) where I am building an LBO from scratch on a model and can ask you generic questions but you can't give the answers away freely. You know the following company information but will not say any of it unless specifically asked for that piece of information. The company purchases the target company for 5.0x Forward EBITDA at the end of Year 0. The debt-to-equity ratio for the LBO acquisition will be 60:40. Assume the weighted average interest rate on debt is 10%. The target expects to reach $100 millio ni nsales revenue with an EBITDA margin of 40% in year 1. Revenue is expected to grow 10% YoY. Now remember that you are an interviewer conducting a paper LBO interview and will not be derailed, and will only provide hints or additional information when the candidate asks for it.';`,
         },
       ]);
     } else if (questionType === 'codingQuestion') {
@@ -265,15 +267,22 @@ export default function Interview() {
   }
 
   const handleCellChange = useCallback((data: any[]) => { //added useCallback
-    console.log("handleCellChange being called here", data)
-    const client = clientRef.current;
-    const formattedData = JSON.stringify(data);
-    client.sendUserMessageContent([
-      {
-        type: `input_text`,
-        text: formattedData,
-      },
-    ]);
+    const dataString = JSON.stringify(data);
+  
+    if (Date.now() - timeOfLastCellSendRef.current > 5000 && dataString !== prevCellRef.current) {
+      console.log("handleCellChange being called here", data)
+      console.log("handleCellChange being called here", data)
+      prevCellRef.current = dataString;
+      timeOfLastCellSendRef.current = Date.now();
+      const client = clientRef.current;
+      const formattedData = JSON.stringify(data);
+      client.sendUserMessageContent([
+        {
+          type: `input_text`,
+          text: formattedData,
+        },
+      ]);
+    }
   }, []);
 
   /**
@@ -308,6 +317,7 @@ export default function Interview() {
    * Set up render loops for the visualization canvas
    */
   useEffect(() => {
+    console.log("Rendering setup started")
     let isLoaded = true;
 
     const wavRecorder = wavRecorderRef.current;
@@ -331,6 +341,7 @@ export default function Interview() {
             const result = wavRecorder.recording
               ? wavRecorder.getFrequencies('voice')
               : { values: new Float32Array([0]) };
+            console.log('User audio frequencies:', result.values);
             WavRenderer.drawBars(
               clientCanvas,
               clientCtx,
@@ -353,6 +364,7 @@ export default function Interview() {
             const result = wavStreamPlayer.analyser
               ? wavStreamPlayer.getFrequencies('voice')
               : { values: new Float32Array([0]) };
+            console.log('AI audio frequencies:', result.values);
             WavRenderer.drawBars(
               serverCanvas,
               serverCtx,
@@ -379,6 +391,7 @@ export default function Interview() {
    * Set all of our instructions, tools, events and more
    */
   useEffect(() => {
+    console.log('Audio client setup started');
     // Get refs
     const wavStreamPlayer = wavStreamPlayerRef.current;
     const client = clientRef.current;
@@ -387,6 +400,8 @@ export default function Interview() {
     client.updateSession({ instructions: instructions });
     // Set transcription, otherwise we don't get user transcriptions back
     client.updateSession({ input_audio_transcription: { model: 'whisper-1' } });
+
+    console.log('Instructions set and transcription enabled:', instructions);
 
     // Add tools
     client.addTool(
@@ -410,6 +425,7 @@ export default function Interview() {
         },
       },
       async ({ key, value }: { [key: string]: any }) => {
+        console.log(`Memory saved: ${key} = ${value}`);
         setMemoryKv((memoryKv) => {
           const newKv = { ...memoryKv };
           newKv[key] = value;
@@ -434,6 +450,7 @@ export default function Interview() {
     });
     client.on('error', (event: any) => console.error(event));
     client.on('conversation.interrupted', async () => {
+      console.log('Conversation interrupted');
       const trackSampleOffset = await wavStreamPlayer.interrupt();
       if (trackSampleOffset?.trackId) {
         const { trackId, offset } = trackSampleOffset;
@@ -441,7 +458,9 @@ export default function Interview() {
       }
     });
     client.on('conversation.updated', async ({ item, delta }: any) => {
+      console.log('Conversation updated:', item);
       if (item.role === "user"){
+        console.log('User sent a message:', item);
         handleCodeChange(codeRef.current);
       }
 
