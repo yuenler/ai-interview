@@ -3,94 +3,41 @@ import React, { useEffect, useState } from 'react';
 interface FinancialQuestionPageProps {
   question: string;
   onBack: () => void;
-  handleCellChange: (data: any[]) => void;
+  onCellChange: (data: any[]) => void;
+  sheetData: any[][];
 }
 
-const FinancialQuestion: React.FC<FinancialQuestionPageProps> = ({ question, onBack, handleCellChange }) => {
-  const [sheetData, setSheetData] = useState<any[][]>([]);
-  const [previousData, setPreviousData] = useState<any[]>([]);
-  const [changeDetected, setChangeDetected] = useState<string | null>(null);
-
-  // Apps Script method
-
-  useEffect(() => {
-    const fetchData = () => {
-      console.log("attempting fetch");
-      fetch('https://script.google.com/macros/s/AKfycbz-EASFbjbSAoIjqWApf1lpX7W1-gJao1Va7umfVY07cdGL8FLcHF11Nz9fuwLiS4gn/exec', 
-        // {method: 'GET',
-        // mode: 'cors',
-        // headers: {
-        //   'Content-Type': 'application/json',
-        // },}
-      )
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Fetched Data:', data);
-        if (Array.isArray(data.data)) {
-          setSheetData(data.data);
-          handleCellChange(data.data);
-        } else {
-          console.error('Expected an array but got:', data.data);
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-      });
-    };
-
-    fetchData();
-  }, [handleCellChange]);
+const FinancialQuestion: React.FC<FinancialQuestionPageProps> = ({ question, onBack, onCellChange, sheetData }) => {
   
   useEffect(() => {
-    const startPolling = () => {
-      const intervalId = setInterval(async () => {
-        const newData = await fetch('https://script.google.com/macros/s/AKfycbz-EASFbjbSAoIjqWApf1lpX7W1-gJao1Va7umfVY07cdGL8FLcHF11Nz9fuwLiS4gn/exec')
-          .then(response => response.json())
-          .catch(error => {
-            console.error('Error fetching data:', error);
-            return [];
-          });
-
-        if (JSON.stringify(newData) !== JSON.stringify(previousData)) {
-          console.log('Data changed:', newData);
-          console.log('Old data:', previousData);
-          setPreviousData(newData);
-          if (newData.body) {
-            const parsedData = JSON.parse(newData.body);
-            console.log('Parsed data:', parsedData);
-
-            // Transform the parsed data as needed
-            const transformedData = Object.entries(parsedData).map(([key, value]) => [key, value]);
-
-            // Update sheetData state with the transformed data
-            setSheetData(transformedData);
-            console.log('Updated sheet data:', transformedData);
-            
-            // Notify that the sheet data has changed
-            handleCellChange(transformedData);
-          } else {
-            console.log('No body in the new data:', newData);
-          }
-
-          // Optionally update a change detection indicator
-          setChangeDetected(`Data changed at ${new Date().toLocaleTimeString()}`);
-        } else {
-          console.log('Data has not changed.');
-        }
-      }, 5000); // Poll every 5 seconds
-
-      return () => clearInterval(intervalId); // Cleanup on unmount
-    };
-
-    startPolling();
-  }, [previousData, handleCellChange]);
-
-
+    const intervalId = setInterval(async () => {
+      const newData = await fetch('https://script.google.com/macros/s/AKfycbz-EASFbjbSAoIjqWApf1lpX7W1-gJao1Va7umfVY07cdGL8FLcHF11Nz9fuwLiS4gn/exec')
+        .then(response => response.json())
+        .catch(error => {
+          console.error('Error fetching data:', error);
+          return [];
+        });
+  
+      if (newData.body) {
+        const parsedData = JSON.parse(newData.body);
+  
+        // Transform the parsed data as needed
+        const transformedData = Object.entries(parsedData).map(([key, value]) => [key, value]);
+  
+        // Update sheetData state with the transformed data
+        console.log('Updated sheet data:', transformedData);
+        
+        // Notify that the sheet data has changed
+        onCellChange(transformedData);
+      } else {
+        console.log('No body in the new data:', newData);
+      }        
+    }, 5000); // Poll every 5 seconds
+  
+    // Cleanup function to clear the interval
+    return () => clearInterval(intervalId); 
+  }, []);
+  
 
   return (
     <div>
@@ -103,7 +50,6 @@ const FinancialQuestion: React.FC<FinancialQuestionPageProps> = ({ question, onB
       </button>
       <div className="flex flex-col items-center h-screen bg-gray-200">
         <div className="w-full h-full">
-        <h3>Spreadsheet Data: {changeDetected}</h3>
         <table className="min-w-full bg-white">
             <thead>
               <tr>

@@ -90,12 +90,8 @@ export default function Interview() {
   const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion' | 'financialQuestion'>('questionList');
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(FINANCIAL_TOPICS[currentTopicIndex].timeLimit); // 1 minute
-  const prevCodeRef = useRef('');
   const timeOfLastCodeSendRef = useRef(Date.now());
-  const prevCellRef = useRef('');
   const timeOfLastCellSendRef = useRef(Date.now());
-
-  const codeRef = useRef('');
 
 
   /**
@@ -105,7 +101,15 @@ export default function Interview() {
   const codingQuestion = 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.';
   const financialQuestion = 'Let’s start by building out the revenue projections for the store. Assume the average selling price (ASP) per item is $500, and the expected number of items sold per year is projected to grow by 5% annually. In year 1, the company expects to sell 10,000 units. In the Excel sheet, calculate the projected revenue for the next three years, based on the provided growth rate and ASP.';
   
-  const [code, setCode] = useState(`# ${codingQuestion}\n\n# Write your code here`);
+  const initialCode = `# ${codingQuestion}\n\n# Write your code here`;
+  const [code, setCode] = useState(initialCode);
+  const [sheetData, setSheetData] = useState<any[]>([]);
+
+
+  const prevCodeRef = useRef(initialCode);
+  const prevCellRef = useRef('[]');
+  const codeRef = useRef('');
+  const sheetRef = useRef<any[]>([]);
 
   /**
    * Timer countdown effect
@@ -157,6 +161,13 @@ export default function Interview() {
   useEffect(() => {
     codeRef.current = code;
   }, [code]);
+
+  // whenever sheet data changes, update the ref
+  useEffect(() => {
+    sheetRef.current = sheetData;
+  }, [sheetData]);
+
+  
 
   /**
    * Format time as hh:mm:ss
@@ -266,11 +277,16 @@ export default function Interview() {
     }
   }
 
-  const handleCellChange = useCallback((data: any[]) => { //added useCallback
+  const handleCellChange = (data) => { //added useCallback
     const dataString = JSON.stringify(data);
+
+    if (dataString !== prevCellRef.current) {
+      console.log("ITS DIFFERNT")
+      console.log(dataString)
+      console.log(prevCellRef.current) 
+    }
   
     if (Date.now() - timeOfLastCellSendRef.current > 5000 && dataString !== prevCellRef.current) {
-      console.log("handleCellChange being called here", data)
       console.log("handleCellChange being called here", data)
       prevCellRef.current = dataString;
       timeOfLastCellSendRef.current = Date.now();
@@ -283,7 +299,7 @@ export default function Interview() {
         },
       ]);
     }
-  }, []);
+  }
 
   /**
    * Auto-scroll the event logs
@@ -458,10 +474,11 @@ export default function Interview() {
       }
     });
     client.on('conversation.updated', async ({ item, delta }: any) => {
-      console.log('Conversation updated:', item);
+      // console.log('Conversation updated:', item);
       if (item.role === "user"){
-        console.log('User sent a message:', item);
+        // console.log('User sent a message:', item);
         handleCodeChange(codeRef.current);
+        handleCellChange(sheetRef.current);
       }
 
       const items = client.conversation.getItems();
@@ -532,7 +549,10 @@ export default function Interview() {
       {currentPage === 'financialQuestion' && (
         <FinancialQuestion
           question={FINANCIAL_TOPICS[currentTopicIndex].text}
-          handleCellChange={handleCellChange}
+          onCellChange={(data: any[]) => {
+            setSheetData(data);
+          }}
+          sheetData={sheetData}
           onBack={() => {
             setCurrentPage('questionList');
             disconnectConversation();
