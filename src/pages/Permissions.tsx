@@ -1,23 +1,41 @@
+// Permissions.tsx
+
 import React, { useState, useEffect, useRef } from 'react';
 
 interface Props {
   navigateTo: (page: string) => void;
+  setMediaStreams: (streams: {
+    audioStream: MediaStream | null;
+    videoStream: MediaStream | null;
+    screenStream: MediaStream | null;
+  }) => void;
 }
 
-const Permissions: React.FC<Props> = ({ navigateTo }) => {
+const Permissions: React.FC<Props> = ({ navigateTo, setMediaStreams }) => {
   const [step, setStep] = useState(0);
+
+  // State variables for individual streams
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState<number>(0);
   const audioRef = useRef<null | AnalyserNode>(null);
 
   const permissions = ['Microphone', 'Webcam', 'Screen Sharing'];
+
   const requestPermission = async () => {
     try {
       setErrorMessage(null);
       let stream: MediaStream | null = null;
+
       if (permissions[step] === 'Microphone') {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setAudioStream(stream); // Set the audio stream
+
+        // Audio level visualization
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         const analyser = audioContext.createAnalyser();
         const source = audioContext.createMediaStreamSource(stream);
@@ -36,15 +54,20 @@ const Permissions: React.FC<Props> = ({ navigateTo }) => {
         updateAudioLevel();
       } else if (permissions[step] === 'Webcam') {
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setVideoStream(stream); // Set the video stream
       } else if (permissions[step] === 'Screen Sharing') {
         stream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true });
+        setScreenStream(stream); // Set the screen stream
       }
 
       if (stream) {
         setMediaStream(stream);
       }
     } catch (error) {
-      setErrorMessage(`Failed to get ${permissions[step]} access. Please ensure you have granted the necessary permissions.`);
+      console.error(error);
+      setErrorMessage(
+        `Failed to get ${permissions[step]} access. Please ensure you have granted the necessary permissions.`
+      );
     }
   };
 
@@ -54,22 +77,30 @@ const Permissions: React.FC<Props> = ({ navigateTo }) => {
       setMediaStream(null);
       setErrorMessage(null);
     } else {
-      navigateTo('instructions');
+      // Check if streams are available
+      if (audioStream && videoStream && screenStream) {
+        // Pass the collected streams to App.tsx
+        setMediaStreams({ audioStream, videoStream, screenStream });
+        navigateTo('instructions');
+      } else {
+        setErrorMessage('Please ensure all permissions are granted.');
+      }
     }
   };
+  
 
   useEffect(() => {
-    // Cleanup media stream and audio analyser when component is unmounted or step changes
     return () => {
-      if (mediaStream) {
+      // Only stop the mediaStream if it is not one of the main streams
+      if (mediaStream && mediaStream !== audioStream && mediaStream !== videoStream && mediaStream !== screenStream) {
         mediaStream.getTracks().forEach((track) => track.stop());
-        setMediaStream(null);
       }
       if (audioRef.current) {
         audioRef.current = null;
       }
     };
-  }, [step, mediaStream]);
+  }, [step, mediaStream, audioStream, videoStream, screenStream]);
+  
 
   return (
     <div className="flex items-center justify-center h-screen bg-blue-50">
@@ -81,7 +112,9 @@ const Permissions: React.FC<Props> = ({ navigateTo }) => {
             {permissions.map((permission, index) => (
               <li
                 key={permission}
-                className={`flex items-center mb-2 ${index <= step ? 'text-green-600' : 'text-gray-500'}`}
+                className={`flex items-center mb-2 ${
+                  index <= step ? 'text-green-600' : 'text-gray-500'
+                }`}
               >
                 <span
                   className={`mr-2 h-4 w-4 rounded-full border-2 ${
@@ -108,17 +141,17 @@ const Permissions: React.FC<Props> = ({ navigateTo }) => {
           {errorMessage && (
             <p className="text-red-700 bg-red-100 py-2 px-4 rounded mb-4">{errorMessage}</p>
           )}
-            {mediaStream && permissions[step] === 'Webcam' && (
+          {mediaStream && permissions[step] === 'Webcam' && (
             <video
               autoPlay
               playsInline
               ref={(video) => {
-              if (video) video.srcObject = mediaStream;
+                if (video) video.srcObject = mediaStream;
               }}
               className="w-full rounded-md shadow-md mt-4"
               style={{ transform: 'scaleX(-1)' }}
             />
-            )}
+          )}
           {mediaStream && permissions[step] === 'Screen Sharing' && (
             <video
               autoPlay
@@ -144,7 +177,9 @@ const Permissions: React.FC<Props> = ({ navigateTo }) => {
                   style={{ width: `${audioLevel}%` }}
                 />
               </div>
-              <p className="mt-2 text-gray-700">Speak into your microphone to see the volume level.</p>
+              <p className="mt-2 text-gray-700">
+                Speak into your microphone to see the volume level.
+              </p>
             </div>
           )}
           {mediaStream && (

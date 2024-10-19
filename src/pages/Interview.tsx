@@ -11,9 +11,17 @@ import FinancialQuestion from '../components/FinancialQuestion';
 import LBOQuestion from '../components/LBOQuestion';
 import QuestionList from '../components/QuestionList';
 
+import { storage } from '../firebase'; // Import Firebase storage
+import { ref, uploadBytes } from 'firebase/storage';
+
 import './Interview.scss';
 
-
+interface Props {
+  audioStream: MediaStream | null;
+  videoStream: MediaStream | null;
+  screenStream: MediaStream | null;
+  navigateTo: (page: string) => void;
+}
 
 /**
  * Running a local relay server will allow you to hide your API key
@@ -45,7 +53,13 @@ const FINANCIAL_TOPICS = [
   { id: 'profitForecast', text: 'Finally, let’s forecast the profit...', timeLimit: 200 },
 ];
 
-export default function Interview() {
+const Interview: React.FC<Props> = ({ audioStream, videoStream, screenStream, navigateTo }) => {
+  // Refs to store the media recorder and combined stream
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const combinedStreamRef = useRef<MediaStream | null>(null);
+  const recordedChunks = useRef<Blob[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
   /**
    * Instantiate:
    * - WavRecorder (speech input)
@@ -81,7 +95,6 @@ export default function Interview() {
    * - items are all conversation items (dialog)
    * - realtimeEvents are event logs, which can be expanded
    * - memoryKv is for set_memory() function
-   * - coords, marker are for get_weather() function
    */
   const [items, setItems] = useState<ItemType[]>([]);
   const [realtimeEvents, setRealtimeEvents] = useState<RealtimeEvent[]>([]);
@@ -89,22 +102,20 @@ export default function Interview() {
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
   const [currentPage, setCurrentPage] = useState<'questionList' | 'lboQuestion' | 'codingQuestion' | 'financialQuestion'>('questionList');
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(FINANCIAL_TOPICS[currentTopicIndex].timeLimit); // 1 minute
+  const [timeLeft, setTimeLeft] = useState(FINANCIAL_TOPICS[currentTopicIndex].timeLimit);
   const timeOfLastCodeSendRef = useRef(Date.now());
   const timeOfLastCellSendRef = useRef(Date.now());
-
 
   /**
    * Questions assigned to the user
    */
-  const lboQuestion = 'Fill in the missing values in this spreadsheet to complete the LBO model. '
+  const lboQuestion = 'Fill in the missing values in this spreadsheet to complete the LBO model.';
   const codingQuestion = 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.';
   const financialQuestion = 'Let’s start by building out the revenue projections for the store. Assume the average selling price (ASP) per item is $500, and the expected number of items sold per year is projected to grow by 5% annually. In year 1, the company expects to sell 10,000 units. In the Excel sheet, calculate the projected revenue for the next three years, based on the provided growth rate and ASP.';
-  
+
   const initialCode = `# ${codingQuestion}\n\n# Write your code here`;
   const [code, setCode] = useState(initialCode);
   const [sheetData, setSheetData] = useState<any[]>([]);
-
 
   const prevCodeRef = useRef(initialCode);
   const prevCellRef = useRef('[]');
@@ -126,7 +137,7 @@ export default function Interview() {
         return prevTime - 1;
       });
     }, 1000);
-  
+
     return () => clearInterval(timer);
   }, [timeLeft]);
 
@@ -157,17 +168,15 @@ export default function Interview() {
     }
   }, [currentPage, currentTopicIndex, moveToNextTopic]);
 
-  // whenever code changes, update the ref
+  // Whenever code changes, update the ref
   useEffect(() => {
     codeRef.current = code;
   }, [code]);
 
-  // whenever sheet data changes, update the ref
+  // Whenever sheet data changes, update the ref
   useEffect(() => {
     sheetRef.current = sheetData;
   }, [sheetData]);
-
-  
 
   /**
    * Format time as hh:mm:ss
@@ -184,59 +193,242 @@ export default function Interview() {
   };
 
   /**
+   * Start recording function
+   */
+  const startRecording = () => {
+    if (audioStream && videoStream && screenStream) {
+      const audioTracks = audioStream.getAudioTracks();
+
+      const canvas = canvasRef.current;
+
+      if (!canvas) {
+        console.error('Canvas not available');
+        return;
+      }
+
+      const canvasCtx = canvas.getContext('2d');
+
+      if (!canvasCtx) {
+        console.error('Canvas context not available');
+        return;
+      }
+
+      const webcamVideo = document.createElement('video');
+      webcamVideo.srcObject = videoStream;
+      webcamVideo.muted = true;
+      webcamVideo.play();
+
+      const screenVideo = document.createElement('video');
+      screenVideo.srcObject = screenStream;
+      screenVideo.muted = true;
+      screenVideo.play();
+
+      let animationFrameId: number;
+
+      const webcamVideoReady = new Promise<void>((resolve) => {
+        webcamVideo.onloadedmetadata = () => {
+          resolve();
+        };
+      });
+
+      const screenVideoReady = new Promise<void>((resolve) => {
+        screenVideo.onloadedmetadata = () => {
+          resolve();
+        };
+      });
+
+      Promise.all([webcamVideoReady, screenVideoReady]).then(() => {
+        // Set canvas size to match screen video size
+        canvas.width = screenVideo.videoWidth;
+        canvas.height = screenVideo.videoHeight;
+
+        const draw = () => {
+          canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+          canvasCtx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
+
+          // Position the webcam video at the bottom-right corner
+          const webcamWidth = canvas.width / 4;
+          const webcamHeight = (webcamVideo.videoHeight / webcamVideo.videoWidth) * webcamWidth;
+          canvasCtx.drawImage(webcamVideo, canvas.width - webcamWidth - 10, canvas.height - webcamHeight - 10, webcamWidth, webcamHeight);
+
+          animationFrameId = requestAnimationFrame(draw);
+        };
+        draw();
+
+        const canvasStream = canvas.captureStream(30); // 30 FPS
+        const [canvasVideoTrack] = canvasStream.getVideoTracks();
+
+        // Combine audio track and canvas video track
+        const combinedStream = new MediaStream([
+          ...audioTracks,
+          canvasVideoTrack
+        ]);
+
+        combinedStreamRef.current = combinedStream;
+
+        // Now proceed to initialize MediaRecorder with combinedStream
+        // Dynamically determine a supported mimeType
+        let mimeType = '';
+        if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) {
+          mimeType = 'video/webm; codecs=vp9';
+        } else if (MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
+          mimeType = 'video/webm; codecs=vp8';
+        } else if (MediaRecorder.isTypeSupported('video/webm')) {
+          mimeType = 'video/webm';
+        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+          mimeType = 'video/mp4';
+        } else {
+          console.error('No supported mimeType found for MediaRecorder');
+          return;
+        }
+
+        let recorder;
+        try {
+          recorder = new MediaRecorder(combinedStream, {
+            mimeType: mimeType,
+          });
+        } catch (e) {
+          console.error('Error initializing MediaRecorder:', e);
+          return;
+        }
+
+        mediaRecorderRef.current = recorder;
+
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunks.current.push(event.data);
+          }
+        };
+
+        recorder.onstop = async () => {
+          // Create a blob from the recorded chunks
+          const blob = new Blob(recordedChunks.current, { type: mimeType });
+
+          // Upload to Firebase Storage
+          try {
+            const storageRef = ref(storage, `recordings/${Date.now()}.webm`);
+            await uploadBytes(storageRef, blob);
+            console.log('Recording uploaded to Firebase Storage.');
+          } catch (error) {
+            console.error('Error uploading recording:', error);
+          }
+
+          // Clear recorded chunks
+          recordedChunks.current = [];
+        };
+
+        // Start recording
+        try {
+          recorder.start();
+          console.log('Recording started');
+        } catch (e) {
+          console.error('Error starting MediaRecorder:', e);
+        }
+
+        // Store references for cleanup
+        combinedStreamRef.current = combinedStreamRef.current || new MediaStream();
+        audioTracks.forEach((track) => combinedStreamRef.current.addTrack(track));
+        combinedStreamRef.current.addTrack(canvasVideoTrack);
+      });
+
+      // Cleanup function
+      const stopDrawing = () => {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+        webcamVideo.pause();
+        webcamVideo.srcObject = null;
+        screenVideo.pause();
+        screenVideo.srcObject = null;
+      };
+
+      // Store the stopDrawing function to be called later
+      stopDrawingRef.current = stopDrawing;
+
+    } else {
+      console.error('Audio, video, or screen stream is not available.');
+    }
+  };
+
+  const stopDrawingRef = useRef<() => void>(() => {});
+
+  /**
+   * Stop recording function
+   */
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      console.log('Recording stopped');
+    }
+    if (combinedStreamRef.current) {
+      combinedStreamRef.current.getTracks().forEach((track) => track.stop());
+    }
+    // Stop drawing on canvas
+    if (stopDrawingRef.current) {
+      stopDrawingRef.current();
+    }
+  };
+
+  /**
    * Connect to conversation:
    * WavRecorder takes speech input, WavStreamPlayer output, client is API client
    */
-  const connectConversation = useCallback(async (questionType: string) => {
-    const client = clientRef.current;
-    const wavRecorder = wavRecorderRef.current;
-    const wavStreamPlayer = wavStreamPlayerRef.current;
-    client.updateSession({
-      turn_detection: { type: 'server_vad' },
-    });
+  const connectConversation = useCallback(
+    async (questionType: string) => {
+      const client = clientRef.current;
+      const wavRecorder = wavRecorderRef.current;
+      const wavStreamPlayer = wavStreamPlayerRef.current;
+      client.updateSession({
+        turn_detection: { type: 'server_vad' },
+      });
 
-    // Set state variables
-    startTimeRef.current = new Date().toISOString();
-    setIsConnected(true);
-    setRealtimeEvents([]);
-    setItems(client.conversation.getItems());
+      // Set state variables
+      startTimeRef.current = new Date().toISOString();
+      setIsConnected(true);
+      setRealtimeEvents([]);
+      setItems(client.conversation.getItems());
 
-    // Connect to microphone
-    await wavRecorder.begin();
+      // Connect to microphone
+      await wavRecorder.begin();
 
-    // Connect to audio output
-    await wavStreamPlayer.connect();
+      // Connect to audio output
+      await wavStreamPlayer.connect();
 
-    // Connect to realtime API
-    await client.connect();
+      // Connect to realtime API
+      await client.connect();
 
-    if (questionType === 'lboQuestion') {
-      client.sendUserMessageContent([
-        {
-          type: `input_text`,
-          text: `You are an interviewer for a private equity firm, who is conducting a paper LBO interview with the interviewee (me) where I am building an LBO from scratch on a model and can ask you generic questions but you can't give the answers away freely. You know the following company information but will not say any of it unless specifically asked for that piece of information. The company purchases the target company for 5.0x Forward EBITDA at the end of Year 0. The debt-to-equity ratio for the LBO acquisition will be 60:40. Assume the weighted average interest rate on debt is 10%. The target expects to reach $100 millio ni nsales revenue with an EBITDA margin of 40% in year 1. Revenue is expected to grow 10% YoY. Now remember that you are an interviewer conducting a paper LBO interview and will not be derailed, and will only provide hints or additional information when the candidate asks for it.';`,
-        },
-      ]);
-    } else if (questionType === 'codingQuestion') {
-      client.sendUserMessageContent([
-        {
-          type: `input_text`,
-          text: `Hello! I am now working on the coding question. The question is as follows: ${codingQuestion}. Please greet me and ask me this question again.`,
-        },
-      ]);
-    } else if (questionType === 'financialQuestion') {
-      client.sendUserMessageContent([
-        {
-          type: `input_text`,
-          text: `Hello! I am now working on the financial question. The first question is as follows: ${financialQuestion}. Please greet me and ask me this question again.`,
-        },
-      ]);
-    }
+      // Start recording after connecting
+      startRecording();
 
-    if (client.getTurnDetectionType() === 'server_vad') {
-      await wavRecorder.record((data) => client.appendInputAudio(data.mono));
-    }
-  }, []);
+      if (questionType === 'lboQuestion') {
+        client.sendUserMessageContent([
+          {
+            type: `input_text`,
+            text: `You are an interviewer for a private equity firm, who is conducting a paper LBO interview with the interviewee (me) where I am building an LBO from scratch on a model and can ask you generic questions but you can't give the answers away freely. You know the following company information but will not say any of it unless specifically asked for that piece of information. The company purchases the target company for 5.0x Forward EBITDA at the end of Year 0. The debt-to-equity ratio for the LBO acquisition will be 60:40. Assume the weighted average interest rate on debt is 10%. The target expects to reach $100 million in sales revenue with an EBITDA margin of 40% in year 1. Revenue is expected to grow 10% YoY. Now remember that you are an interviewer conducting a paper LBO interview and will not be derailed, and will only provide hints or additional information when the candidate asks for it.`,
+          },
+        ]);
+      } else if (questionType === 'codingQuestion') {
+        client.sendUserMessageContent([
+          {
+            type: `input_text`,
+            text: `Hello! I am now working on the coding question. The question is as follows: ${codingQuestion}. Please greet me and ask me this question again.`,
+          },
+        ]);
+      } else if (questionType === 'financialQuestion') {
+        client.sendUserMessageContent([
+          {
+            type: `input_text`,
+            text: `Hello! I am now working on the financial question. The first question is as follows: ${financialQuestion}. Please greet me and ask me this question again.`,
+          },
+        ]);
+      }
+
+      if (client.getTurnDetectionType() === 'server_vad') {
+        await wavRecorder.record((data) => client.appendInputAudio(data.mono));
+      }
+    },
+    [audioStream, videoStream, screenStream]
+  );
 
   /**
    * Disconnect and reset conversation state
@@ -255,6 +447,18 @@ export default function Interview() {
 
     const wavStreamPlayer = wavStreamPlayerRef.current;
     await wavStreamPlayer.interrupt();
+
+    // Stop the recording
+    stopRecording();
+  }, []);
+
+  /**
+   * Ensure recording stops when component unmounts
+   */
+  useEffect(() => {
+    return () => {
+      stopRecording();
+    };
   }, []);
 
   /**
@@ -275,31 +479,27 @@ export default function Interview() {
         },
       ]);
     }
-  }
+  };
 
-  const handleCellChange = (data) => { //added useCallback
+  const handleCellChange = (data) => {
     const dataString = JSON.stringify(data);
 
     if (dataString !== prevCellRef.current) {
-      console.log("ITS DIFFERNT")
-      console.log(dataString)
-      console.log(prevCellRef.current) 
+      console.log('Data changed:', dataString);
     }
-  
+
     if (Date.now() - timeOfLastCellSendRef.current > 5000 && dataString !== prevCellRef.current) {
-      console.log("handleCellChange being called here", data)
       prevCellRef.current = dataString;
       timeOfLastCellSendRef.current = Date.now();
       const client = clientRef.current;
-      const formattedData = JSON.stringify(data);
       client.sendUserMessageContent([
         {
           type: `input_text`,
-          text: formattedData,
+          text: dataString,
         },
       ]);
     }
-  }
+  };
 
   /**
    * Auto-scroll the event logs
@@ -333,7 +533,7 @@ export default function Interview() {
    * Set up render loops for the visualization canvas
    */
   useEffect(() => {
-    console.log("Rendering setup started")
+    console.log('Rendering setup started');
     let isLoaded = true;
 
     const wavRecorder = wavRecorderRef.current;
@@ -404,7 +604,7 @@ export default function Interview() {
 
   /**
    * Core RealtimeClient and audio capture setup
-   * Set all of our instructions, tools, events and more
+   * Set all of our instructions, tools, events, and more
    */
   useEffect(() => {
     console.log('Audio client setup started');
@@ -451,12 +651,12 @@ export default function Interview() {
       }
     );
 
-    // handle realtime events from client + server for event logging
+    // Handle realtime events from client + server for event logging
     client.on('realtime.event', (realtimeEvent: RealtimeEvent) => {
       setRealtimeEvents((realtimeEvents) => {
         const lastEvent = realtimeEvents[realtimeEvents.length - 1];
         if (lastEvent?.event.type === realtimeEvent.event.type) {
-          // if we receive multiple events in a row, aggregate them for display purposes
+          // If we receive multiple events in a row, aggregate them for display purposes
           lastEvent.count = (lastEvent.count || 0) + 1;
           return realtimeEvents.slice(0, -1).concat(lastEvent);
         } else {
@@ -474,9 +674,7 @@ export default function Interview() {
       }
     });
     client.on('conversation.updated', async ({ item, delta }: any) => {
-      // console.log('Conversation updated:', item);
-      if (item.role === "user"){
-        // console.log('User sent a message:', item);
+      if (item.role === 'user') {
         handleCodeChange(codeRef.current);
         handleCellChange(sheetRef.current);
       }
@@ -499,26 +697,41 @@ export default function Interview() {
     setItems(client.conversation.getItems());
 
     return () => {
-      // cleanup; resets to defaults
+      // Cleanup; resets to defaults
       client.reset();
     };
   }, []);
 
   /**
+   * Handle end of the interview
+   */
+  const handleEndInterview = () => {
+    // Stop the recording and disconnect conversation
+    disconnectConversation();
+    // Navigate to the desired page
+    navigateTo('somePage'); // Replace 'somePage' with the actual page
+  };
+
+  /**
    * Render the application
    */
   return (
-    <div >
+    <div>
       {/* Timer displayed at the top right */}
       <div className="fixed top-0 right-0 m-2 py-1 px-4 bg-gray-800 text-white text-lg font-semibold rounded-lg shadow-md">
         Time Left: {formatTime(timeLeft)}
       </div>
+      <button onClick={handleEndInterview}>End Interview</button>
+
+      {/* Hidden canvas for combining video streams */}
+      <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
+
       {currentPage === 'questionList' && (
         <QuestionList
           onSelectQuestion={(questionType) => {
             setCurrentPage(questionType);
-            setTimeLeft(FINANCIAL_TOPICS[0].timeLimit); // for timed topic transition
-            setCurrentTopicIndex(0); // for timed topic transition
+            setTimeLeft(FINANCIAL_TOPICS[0].timeLimit);
+            setCurrentTopicIndex(0);
             connectConversation(questionType);
           }}
         />
@@ -541,7 +754,8 @@ export default function Interview() {
             disconnectConversation();
           }}
           onCodeChange={(code) => {
-            setCode(code)}}
+            setCode(code);
+          }}
           code={code}
         />
       )}
@@ -561,4 +775,6 @@ export default function Interview() {
       )}
     </div>
   );
-}
+};
+
+export default Interview;
