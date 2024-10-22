@@ -146,7 +146,9 @@ const Permissions: React.FC<Props> = ({ navigateTo, setMediaStreams }) => {
               autoPlay
               playsInline
               ref={(video) => {
-                if (video) video.srcObject = mediaStream;
+                if (video && video.srcObject !== mediaStream) {
+                  video.srcObject = mediaStream;
+                }
               }}
               className="w-full rounded-md shadow-md mt-4"
               style={{ transform: 'scaleX(-1)' }}
@@ -157,7 +159,9 @@ const Permissions: React.FC<Props> = ({ navigateTo, setMediaStreams }) => {
               autoPlay
               playsInline
               ref={(video) => {
-                if (video) video.srcObject = mediaStream;
+                if (video && video.srcObject !== mediaStream) {
+                  video.srcObject = mediaStream;
+                }
               }}
               className="w-full rounded-md shadow-md mt-4"
             />
