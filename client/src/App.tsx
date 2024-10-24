@@ -46,19 +46,19 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        // User is signed in
-        setCurrentPage('permissions');
-      } else {
-        // User is signed out
-        setCurrentPage('login');
-      }
-    });
+  // useEffect(() => {
+  //   const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+  //     if (firebaseUser) {
+  //       // User is signed in
+  //       setCurrentPage('permissions');
+  //     } else {
+  //       // User is signed out
+  //       setCurrentPage('login');
+  //     }
+  //   });
 
-    return () => unsubscribe();
-  }, []);
+  //   return () => unsubscribe();
+  // }, []);
 
   useEffect(() => {
     // Cleanup function when component unmounts or when streams change

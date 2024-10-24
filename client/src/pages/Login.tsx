@@ -19,7 +19,7 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigateTo('permissions');
+      navigateTo('applicantDashboard');
     } catch (error: any) {
       console.error('Error signing in:', error);
       alert(error.message);
@@ -30,7 +30,7 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      navigateTo('permissions');
+      navigateTo('applicantDashboard');
     } catch (error: any) {
       console.error('Error signing in with Google:', error);
       alert(error.message);
@@ -50,7 +50,7 @@ const Login: React.FC<Props> = ({ navigateTo }) => {
         <div className="mb-4">
           <label className="block text-gray-700 font-bold">Email</label>
           <input
-            type="email"
+          type="email"
             className="w-full mt-2 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
             placeholder="Enter your email"
             value={email}

@@ -166,7 +166,8 @@ const AdminDashboard: React.FC<Props> = ({ navigateTo }) => {
   // Parse CSV data
   const parseCsv = (text: string) => {
     const lines = text.split('\n').filter((line) => line.trim() !== '');
-    const data = lines.map((line) => {
+    // slice(1) to skip header row
+    const data = lines.slice(1).map((line) => {
       const [firstName, lastName, email] = line.split(',');
       return { firstName, lastName, email };
     });
@@ -195,12 +196,14 @@ const AdminDashboard: React.FC<Props> = ({ navigateTo }) => {
           videoLink: '',
           testLink: '',
           score: '',
+          roleName,
+          companyName,
         })
       );
       await Promise.all(saveCandidatesPromises);
 
       // Send emails
-      await axios.post('/send-invites', {
+      await axios.post('http://localhost:8081/send-invites', {
         recipients: parsedData,
         googleSheetLink,
         roleName,

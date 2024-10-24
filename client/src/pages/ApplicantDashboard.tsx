@@ -8,8 +8,6 @@ interface Props {
   navigateTo: (page: string) => void;
 }
 
-
-
 const ApplicantDashboard: React.FC<Props> = ({navigateTo}) => {
   const { user } = useContext(UserContext);
   const [assignedTests, setAssignedTests] = useState<any[]>([]);
@@ -18,7 +16,7 @@ const ApplicantDashboard: React.FC<Props> = ({navigateTo}) => {
     const fetchAssignedTests = async () => {
       if (user?.email) {
         const q = query(
-          collection(db, 'assignedTests'),
+          collection(db, 'candidates'),
           where('email', '==', user.email)
         );
         const querySnapshot = await getDocs(q);
@@ -38,7 +36,7 @@ const ApplicantDashboard: React.FC<Props> = ({navigateTo}) => {
             {assignedTests.map((test, index) => (
           <li key={index} className="mb-2">
             <button
-              onClick={() => navigateTo(test)}
+              onClick={() => navigateTo('permissions')}
               className="text-blue-600 hover:underline"
             >
               {test.roleName} at {test.companyName}

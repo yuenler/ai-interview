@@ -44,9 +44,9 @@ app.post('/send-invites', async (req, res) => {
         ${companyName} Recruitment Team
       `;
       return postmarkClient.sendEmail({
-        From: 'your-email@example.com',
+        From: 'yuenler@gbstem.org',
         To: recipient.email,
-        Subject: `Invitation to Interview for ${roleName}`,
+        Subject: `${companyName} Technical Interview for ${roleName}`,
         TextBody: emailBody,
       });
     });

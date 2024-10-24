@@ -39,7 +39,7 @@ const Signup: React.FC<Props> = ({ navigateTo }) => {
         name,
         userType: userType,
       });
-      navigateTo(userType === 'recruiter' ? 'adminDashboard' : 'permissions');
+      navigateTo(userType === 'recruiter' ? 'adminDashboard' : 'applicantDashboard');
     } catch (error: any) {
       console.error('Error signing up:', error);
       alert(error.message);
@@ -61,7 +61,7 @@ const Signup: React.FC<Props> = ({ navigateTo }) => {
         name: user.displayName || '',
         userType: userType,
       });
-      navigateTo(userType === 'recruiter' ? 'adminDashboard' : 'permissions');
+      navigateTo(userType === 'recruiter' ? 'adminDashboard' : 'applicantDashboard');
     } catch (error: any) {
       console.error('Error signing up with Google:', error);
       alert(error.message);
