@@ -17,6 +17,8 @@ const Signup: React.FC<Props> = ({ navigateTo }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userType, setUserType] = useState('job_candidate'); // Default user type
+  const [name, setName] = useState('');
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,9 +36,10 @@ const Signup: React.FC<Props> = ({ navigateTo }) => {
       // Store user type in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         email: email,
+        name,
         userType: userType,
       });
-      navigateTo('permissions');
+      navigateTo(userType === 'recruiter' ? 'adminDashboard' : 'permissions');
     } catch (error: any) {
       console.error('Error signing up:', error);
       alert(error.message);
@@ -52,12 +55,13 @@ const Signup: React.FC<Props> = ({ navigateTo }) => {
     try {
       const userCredential = await signInWithPopup(auth, provider);
       const user = userCredential.user;
-      // Store user type in Firestore
+      // Store user type and name in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
+        name: user.displayName || '',
         userType: userType,
       });
-      navigateTo('permissions');
+      navigateTo(userType === 'recruiter' ? 'adminDashboard' : 'permissions');
     } catch (error: any) {
       console.error('Error signing up with Google:', error);
       alert(error.message);
@@ -73,6 +77,18 @@ const Signup: React.FC<Props> = ({ navigateTo }) => {
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
           Create your account
         </h2>
+        {/* Name Input */}
+        <div className="mb-4">
+          <label className="block text-gray-700 font-bold">Name</label>
+          <input
+            type="text"
+            className="w-full mt-2 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
+            placeholder="Enter your full name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
         {/* Email Input */}
         <div className="mb-4">
           <label className="block text-gray-700 font-bold">Email</label>
