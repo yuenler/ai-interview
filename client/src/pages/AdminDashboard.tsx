@@ -203,7 +203,7 @@ const AdminDashboard: React.FC<Props> = ({ navigateTo }) => {
       await Promise.all(saveCandidatesPromises);
 
       // Send emails
-      await axios.post('http://localhost:8081/send-invites', {
+      await axios.post('http://localhost:8082/send-invites', {
         recipients: parsedData,
         googleSheetLink,
         roleName,

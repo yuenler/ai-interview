@@ -1,4 +1,3 @@
-// index.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -28,7 +27,6 @@ app.use(express.json());
 const postmarkClient = new ServerClient(POSTMARK_API_KEY);
 
 // Endpoint to send invitations
-// index.js
 app.post('/send-invites', async (req, res) => {
   const { recipients, googleSheetLink, roleName, companyName, recruiterName } = req.body;
   try {
@@ -58,11 +56,10 @@ app.post('/send-invites', async (req, res) => {
   }
 });
 
-
 // RealtimeRelay setup
 const relay = new RealtimeRelay(OPENAI_API_KEY);
-relay.app = app; // Attach relay to the Express app
+relay.listen(PORT); // Start the RealtimeRelay server and print the listening message
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(PORT + 1, () => {
+  console.log(`Server is running on port ${PORT + 1}`);
 });

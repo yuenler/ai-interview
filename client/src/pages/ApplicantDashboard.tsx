@@ -6,9 +6,10 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface Props {
   navigateTo: (page: string) => void;
+  setInterviewId: (interviewId: string) => void;
 }
 
-const ApplicantDashboard: React.FC<Props> = ({navigateTo}) => {
+const ApplicantDashboard: React.FC<Props> = ({navigateTo, setInterviewId}) => {
   const { user } = useContext(UserContext);
   const [assignedTests, setAssignedTests] = useState<any[]>([]);
 
@@ -20,7 +21,11 @@ const ApplicantDashboard: React.FC<Props> = ({navigateTo}) => {
           where('email', '==', user.email)
         );
         const querySnapshot = await getDocs(q);
-        const tests = querySnapshot.docs.map((doc) => doc.data());
+        const tests = querySnapshot.docs.map((doc) => ({
+          interviewId: doc.id,
+          ...doc.data()
+        }));
+       
         setAssignedTests(tests);
       }
     };
@@ -36,7 +41,11 @@ const ApplicantDashboard: React.FC<Props> = ({navigateTo}) => {
             {assignedTests.map((test, index) => (
           <li key={index} className="mb-2">
             <button
-              onClick={() => navigateTo('permissions')}
+              onClick={() => {
+                setInterviewId(test.interviewId)
+                console.log(test.interviewId)
+                navigateTo('permissions')
+              }}
               className="text-blue-600 hover:underline"
             >
               {test.roleName} at {test.companyName}

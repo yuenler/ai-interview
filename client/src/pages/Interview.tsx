@@ -11,16 +11,18 @@ import FinancialQuestion from '../components/FinancialQuestion';
 import LBOQuestion from '../components/LBOQuestion';
 import QuestionList from '../components/QuestionList';
 
-import { storage } from '../firebase'; // Import Firebase storage
+import { storage, db } from '../firebase'; // Import Firebase storage
 import { ref, uploadBytes } from 'firebase/storage';
 
 import './Interview.scss';
+import { doc, updateDoc } from 'firebase/firestore';
 
 interface Props {
   audioStream: MediaStream | null;
   videoStream: MediaStream | null;
   screenStream: MediaStream | null;
   navigateTo: (page: string) => void;
+  interviewId: string;
 }
 
 /**
@@ -53,7 +55,7 @@ const FINANCIAL_TOPICS = [
   { id: 'profitForecast', text: 'Finally, let’s forecast the profit...', timeLimit: 200 },
 ];
 
-const Interview: React.FC<Props> = ({ audioStream, videoStream, screenStream, navigateTo }) => {
+const Interview: React.FC<Props> = ({ audioStream, videoStream, screenStream, interviewId, navigateTo }) => {
   // Refs to store the media recorder and combined stream
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const combinedStreamRef = useRef<MediaStream | null>(null);
@@ -196,6 +198,7 @@ const Interview: React.FC<Props> = ({ audioStream, videoStream, screenStream, na
    * Start recording function
    */
   const startRecording = () => {
+    console.log('Starting recording');
     if (audioStream && videoStream && screenStream) {
       const audioTracks = audioStream.getAudioTracks();
 
@@ -301,6 +304,7 @@ const Interview: React.FC<Props> = ({ audioStream, videoStream, screenStream, na
         };
 
         recorder.onstop = async () => {
+          console.log('Recording stopped');
           // Create a blob from the recorded chunks
           const blob = new Blob(recordedChunks.current, { type: mimeType });
 
@@ -309,6 +313,18 @@ const Interview: React.FC<Props> = ({ audioStream, videoStream, screenStream, na
             const storageRef = ref(storage, `recordings/${Date.now()}.webm`);
             await uploadBytes(storageRef, blob);
             console.log('Recording uploaded to Firebase Storage.');
+
+            console.log('interviewId:', interviewId);
+
+            const interviewRef = doc(db, 'candidates', interviewId);
+            console.log('Updating interview with video link:', storageRef.fullPath);
+            console.log('Updating interview with test status: completed');
+            console.log('Updating interview with test status: completed');
+            await updateDoc(interviewRef, {
+              videoLink: storageRef.fullPath,
+              testStatus: 'completed',
+            });
+
           } catch (error) {
             console.error('Error uploading recording:', error);
           }

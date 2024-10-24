@@ -1,7 +1,5 @@
 // App.tsx
 import React, { useState, useEffect, useContext } from 'react';
-import { auth } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
 import Interview from './pages/Interview';
 import Permissions from './pages/Permissions';
 import Instructions from './pages/Instructions';
@@ -17,6 +15,7 @@ const App: React.FC = () => {
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const [interviewId, setInterviewId] = useState<string>('');
 
   const setMediaStreams = (streams: {
     audioStream: MediaStream | null;
@@ -45,20 +44,6 @@ const App: React.FC = () => {
       setCurrentPage('login');
     }
   }, [user]);
-
-  // useEffect(() => {
-  //   const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-  //     if (firebaseUser) {
-  //       // User is signed in
-  //       setCurrentPage('permissions');
-  //     } else {
-  //       // User is signed out
-  //       setCurrentPage('login');
-  //     }
-  //   });
-
-  //   return () => unsubscribe();
-  // }, []);
 
   useEffect(() => {
     // Cleanup function when component unmounts or when streams change
@@ -92,12 +77,13 @@ const App: React.FC = () => {
             videoStream={videoStream}
             screenStream={screenStream}
             navigateTo={navigateTo}
+            interviewId={interviewId}
           />
         );
       case 'adminDashboard':
         return <AdminDashboard navigateTo={navigateTo} />;
       case 'applicantDashboard':
-        return <ApplicantDashboard navigateTo={navigateTo} />;
+        return <ApplicantDashboard navigateTo={navigateTo} setInterviewId={setInterviewId} />;
       default:
         return <Login navigateTo={navigateTo} />;
     }

@@ -1,7 +1,7 @@
 // UserContext.tsx
 import React, { createContext, useState, useEffect } from 'react';
 import { auth, db } from './firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 interface IUser {
