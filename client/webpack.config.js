@@ -3,6 +3,7 @@ const path = require('path');
 module.exports = {
   // ... other configurations ...
   resolve: {
+    extensions: ['.ts', '.tsx', '.js', '.json'],
     fallback: {
       "buffer": require.resolve("buffer/"),
       "url": require.resolve("url/"),
